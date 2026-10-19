@@ -1,0 +1,1006 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>좌표 탈출 미션</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: 학생용 한 줄 진행. 위에 학교 지도(풀수록 경로가 그려짐), 아래로 문제가 하나씩 열린다. */
+:root{
+  --paper:#F2F5F7; --grid:#DCE4EA; --card:#FFFFFF; --ink:#16222E; --muted:#5A6B7A;
+  --pen:#2459C7; --pen-soft:#E3ECFB; --exit:#C2410C; --exit-soft:#FDEBDD; --ok:#1E7A3C; --ok-soft:#E1F3E6;
+  --bad:#B42318; --bad-soft:#FDE8E6; --line:#CBD6DF; --lock:#E7ECF0;
+  --s1:#2459C7; --s2:#7B3FB8; --s3:#1E7A3C; --s4:#C2410C; --s5:#A61E4D;
+  --display:"Gothic A1","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#111820; --grid:#1C2732; --card:#17212B; --ink:#E6EDF3; --muted:#93A4B4;
+  --pen:#7FA6F5; --pen-soft:#1B2A45; --exit:#F59A62; --exit-soft:#3A2416; --ok:#6BCB8B; --ok-soft:#16301F;
+  --bad:#F28B82; --bad-soft:#3A1A18; --line:#2A3946; --lock:#1B2530;
+  --s1:#7FA6F5; --s2:#B992EA; --s3:#6BCB8B; --s4:#F59A62; --s5:#EE7FA6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#111820; --grid:#1C2732; --card:#17212B; --ink:#E6EDF3; --muted:#93A4B4;
+  --pen:#7FA6F5; --pen-soft:#1B2A45; --exit:#F59A62; --exit-soft:#3A2416; --ok:#6BCB8B; --ok-soft:#16301F;
+  --bad:#F28B82; --bad-soft:#3A1A18; --line:#2A3946; --lock:#1B2530;
+  --s1:#7FA6F5; --s2:#B992EA; --s3:#6BCB8B; --s4:#F59A62; --s5:#EE7FA6; color-scheme:dark}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.65;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px}
+.wrap{max-width:820px;margin:0 auto;padding-inline:16px;padding-block:24px 64px;display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.25}
+h1{font-size:clamp(26px,6vw,38px);font-weight:800}
+h2{font-size:20px;font-weight:800}
+h3{font-size:16px;font-weight:700}
+p{margin:0}
+.c{font-family:var(--mono);font-size:.93em;white-space:nowrap;color:var(--pen)}
+.eyebrow{font-size:12px;letter-spacing:.08em;font-weight:600;color:var(--muted)}
+.muted{color:var(--muted)}
+header{display:flex;flex-direction:column;gap:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px 11px;font-size:13px}
+.chip b{font-family:var(--mono);font-weight:500;color:var(--pen)}
+.status{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-size:14px}
+.status .bar{flex:1 1 160px;height:8px;background:var(--lock);border-radius:99px;overflow:hidden;min-width:120px}
+.status .bar i{display:block;height:100%;background:var(--ok);width:0;transition:width .4s}
+.status b{font-family:var(--mono);font-weight:500}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.map{position:relative;border-radius:10px;overflow:hidden;line-height:0}
+.map img{width:100%;height:auto;display:block}
+.map svg{position:absolute;inset:0;width:100%;height:100%}
+.maptools{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:13px;margin-top:10px}
+.maptools label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.log{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.log div{border:1px dashed var(--line);border-radius:8px;padding:8px 10px;font-size:13px;min-width:0}
+.log div.got{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
+.log b{font-family:var(--mono);font-weight:500;display:block;font-size:14px}
+.lockrow{display:flex;gap:8px}
+.lockrow span{width:40px;height:48px;border:1.5px solid var(--line);border-radius:8px;display:grid;place-items:center;font:500 22px var(--mono);background:var(--card)}
+.lockrow span.got{border-color:var(--pen);color:var(--pen);background:var(--pen-soft)}
+.stage-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;border-left:4px solid var(--sc);padding-left:12px}
+.stage-head .eyebrow{color:var(--sc)}
+.stage-head .where{font-size:14px;color:var(--muted);width:100%}
+.stage{display:flex;flex-direction:column;gap:12px}
+.q{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.q .top{display:flex;gap:10px;align-items:baseline}
+.q .n{font-family:var(--mono);font-size:18px;color:var(--sc)}
+.q.active{border:2px solid var(--sc);box-shadow:0 4px 18px -10px var(--sc)}
+.q.locked{background:var(--lock);color:var(--muted);border-style:dashed}
+.q.done{opacity:.95}
+.q.done .top::after{content:"해결";margin-left:auto;font-size:12px;font-weight:600;color:var(--ok);background:var(--ok-soft);border-radius:99px;padding:1px 10px}
+.fields{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.f{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--muted)}
+.f input,.f select{font:500 15px var(--mono);color:var(--ink);background:var(--paper);border:1.5px solid var(--line);border-radius:8px;padding:7px 9px;width:92px}
+.f.wide input,.f.wide select{width:150px}
+.f input:focus,.f select:focus{outline:none;border-color:var(--pen)}
+.tuple{display:flex;gap:4px;align-items:center;font-family:var(--mono);color:var(--muted)}
+.f .tuple input{width:64px;min-width:0}
+button{font:600 14px var(--body);border:1px solid var(--pen);background:var(--pen);color:var(--card);border-radius:8px;padding:8px 14px;cursor:pointer}
+button.ghost{background:transparent;color:var(--pen)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--pen);outline-offset:2px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.fb{font-size:14px;border-radius:6px;padding:7px 10px}
+.fb.bad{background:var(--bad-soft);color:var(--bad)}
+.fb.hint{background:var(--pen-soft);color:var(--pen)}
+.goto{background:var(--exit-soft);color:var(--exit);border-radius:6px;padding:8px 10px;font-size:14px;font-weight:600}
+.ans{background:var(--ok-soft);border-radius:6px;padding:8px 10px;font-size:14px}
+.win{border:2px solid var(--s5);text-align:left;display:flex;flex-direction:column;gap:8px}
+.win h2{font-size:26px;color:var(--s5)}
+.work{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:start}
+.workL{display:flex;flex-direction:column;gap:10px;min-width:0}
+.preview{font:500 14px var(--mono);color:var(--muted);background:var(--paper);border:1px dashed var(--line);border-radius:8px;padding:7px 10px;overflow-wrap:anywhere}
+.preview.okv{color:var(--pen);border-style:solid;border-color:var(--pen)}
+.preview.err{color:var(--bad);border-color:var(--bad)}
+.f input.cur{border-color:var(--pen);background:var(--pen-soft)}
+.kpwrap{display:flex;flex-direction:column;gap:6px;width:270px;max-width:100%}
+.kphead{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.04em}
+button.sm{padding:3px 10px;font-size:12px}
+.kp{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;background:var(--lock);border-radius:10px;padding:6px}
+.kp button{padding:0;height:40px;border-radius:7px;font:600 15px var(--mono);border:1px solid var(--line);background:var(--card);color:var(--ink);touch-action:manipulation}
+.kp button.key-op{color:var(--pen)}
+.kp button.key-fn{color:var(--bad)}
+.kp button.key-next{font-family:var(--body);font-size:12.5px;background:var(--pen);color:var(--card);border-color:var(--pen)}
+.kp button.key-frac{color:var(--pen)}
+.fk{display:inline-flex;flex-direction:column;align-items:center;line-height:.95;font-size:14px}
+.fk b{display:block;width:20px;height:2px;background:currentColor;margin:1px 0}
+.mwrap{position:relative;display:inline-block;vertical-align:middle}
+.f .mwrap input.mi{height:46px;box-sizing:border-box}
+.mwrap.hasfrac input.mi{color:transparent;caret-color:transparent}
+.mview{position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:0 6px;font:500 15px var(--mono);color:var(--ink);pointer-events:none;white-space:nowrap;overflow:hidden}
+.mwrap.hasfrac .mview{display:flex}
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 2px;font-size:13px;line-height:1.2}
+.fr .nu{border-bottom:1.5px solid currentColor;padding:0 3px}
+.fr .de{padding:0 3px}
+.mview .fr{pointer-events:auto;cursor:pointer;border-radius:4px}
+.mview .fr:hover{background:var(--pen-soft)}
+.mcaret{display:none;width:2px;height:1.25em;background:var(--pen);margin-left:2px;animation:mblink 1s steps(1) infinite}
+.mwrap.focus .mcaret{display:inline-block}
+@keyframes mblink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.mcaret{animation:none}}
+.fedit{position:absolute;left:-4px;top:50%;transform:translateY(-50%);z-index:8;display:flex;align-items:center;gap:6px;background:var(--card);border:2px solid var(--pen);border-radius:9px;padding:4px 6px;box-shadow:0 8px 24px -10px rgba(0,0,0,.35);white-space:nowrap}
+.fedit[hidden]{display:none!important}
+.fedit .pre{font:500 15px var(--mono);color:var(--ink)}
+.fedit .stack{display:flex;flex-direction:column;align-items:center;gap:2px}
+.fedit .fi{width:72px;height:22px;box-sizing:border-box;font:500 14px var(--mono);text-align:center;color:var(--ink);background:var(--paper);border:1.5px solid var(--line);border-radius:5px;padding:1px 4px}
+.fedit .fi.cur,.fedit .fi:focus{outline:none;border-color:var(--pen);background:var(--pen-soft)}
+.fedit .bar{display:block;width:78px;height:2px;background:var(--ink)}
+.fedit .fbtns{display:flex;flex-direction:column;gap:3px}
+.fedit .fbtns button{padding:2px 8px;font-size:12px}
+.kp button:active{transform:translateY(1px)}
+@media (max-width:640px){.work{grid-template-columns:1fr}.kpwrap{width:100%}.kp button{height:44px}}
+.padwrap{display:flex;flex-direction:column;gap:6px}
+.padtools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.padtools .sp{flex:1}
+.tool{font:600 13px var(--body);padding:5px 10px;border-radius:7px;border:1px solid var(--line);background:var(--card);color:var(--ink);display:inline-flex;gap:6px;align-items:center}
+.tool i{width:14px;height:14px;border-radius:50%;display:inline-block}
+.tool.on{border-color:var(--pen);background:var(--pen-soft);color:var(--pen)}
+.tool.danger{color:var(--bad)}
+canvas.pad{width:100%;height:300px;display:block;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;border:1px solid var(--line);border-radius:8px;touch-action:none;cursor:crosshair;
+  background-color:var(--card);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:20px 20px}
+.status button.sm{margin-left:auto}
+.q.arrive{border:2px dashed var(--exit);background:var(--exit-soft)}
+.q.arrive .n{color:var(--exit);font:700 14px var(--body)}
+.q.arrive .fields{align-items:flex-end}
+.q.arrive .f input{width:180px;font-family:var(--body)}
+table.codes{border-collapse:collapse;width:100%;font-size:14px;margin-top:10px}
+table.codes th,table.codes td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+.teampanel{display:flex;flex-direction:column;gap:10px}
+.teampanel.need{border:2px solid var(--exit)}
+.teambtns{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.teambtn{font:700 16px var(--display);padding:12px 0;border-radius:10px;border:1.5px solid var(--line);background:var(--card);color:var(--ink)}
+.teambtn.on{background:var(--pen);border-color:var(--pen);color:var(--card)}
+.teambtn.solo{font-size:14px}
+.sync{font-size:13px;color:var(--muted);margin:0}
+.sync.ok{color:var(--ok)}.sync.bad{color:var(--bad)}
+.teamchip{font:700 13px var(--body);padding:3px 10px;border-radius:99px;background:var(--lock);color:var(--muted)}
+.teamchip.on{background:var(--pen);color:var(--card)}
+.giveup{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px}
+button.danger{border-color:var(--bad);color:var(--bad)}
+button.danger:not(.ghost){background:var(--bad);color:var(--card)}
+.penchip{font:700 13px var(--body);padding:3px 10px;border-radius:99px;background:var(--bad-soft);color:var(--bad)}
+.hintbtn{font:700 13px var(--body);padding:3px 10px;border-radius:99px;background:#FFF4C2;color:#7A5A00;border:1px solid #E8C84A}
+.hpop{position:fixed;inset:0;background:rgba(10,20,30,.5);display:flex;align-items:center;justify-content:center;padding:16px;z-index:60}
+.hpbox{background:var(--card);border-radius:16px;padding:24px 22px;width:100%;max-width:440px;display:flex;flex-direction:column;gap:10px;text-align:center;border:3px solid #E8C84A;box-shadow:0 24px 70px -20px rgba(0,0,0,.6);animation:hpin .3s ease-out}
+.hpicon{font-size:40px;line-height:1}
+.hpfrom{font-size:13px;color:var(--muted);margin:0}
+.hptext{font-size:18px;line-height:1.6;margin:4px 0 8px;white-space:pre-wrap;overflow-wrap:anywhere;text-align:left;background:#FFFBEA;color:#3D2E00;border-radius:10px;padding:12px 14px}
+.hpbox button{font-size:16px;padding:12px}
+.hllist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow:auto}
+.hllist li{display:grid;grid-template-columns:44px 1fr;gap:8px;font-size:15px;border-bottom:1px solid var(--line);padding-bottom:8px;white-space:pre-wrap;overflow-wrap:anywhere}
+.hllist .tm{font-family:var(--mono);color:var(--muted);font-size:13px}
+@keyframes hpin{from{transform:scale(.92);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.hpbox{animation:none}}
+/* 2분할: 왼쪽(지도·이동 기록·자물쇠) 고정, 오른쪽(문제) 스크롤 */
+.wrap.app{max-width:1480px;gap:16px;padding-block:20px 16px}
+.app header{gap:8px}
+.app header h1{font-size:clamp(22px,2.6vw,30px)}
+.app header .muted{font-size:14px}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start}
+.side{position:sticky;top:calc(env(safe-area-inset-top,0px) + 10px);max-height:calc(100vh - 20px);overflow:auto;display:flex;flex-direction:column;gap:14px;padding:2px 4px 8px 0;overscroll-behavior:contain}
+.side .stage{gap:8px}
+.side h2{font-size:17px}
+.side .panel{padding:10px}
+.side .maptools{font-size:12px;margin-top:6px}
+.side .maptools .muted{display:none}
+.side .map{width:fit-content;max-width:100%;margin:0 auto}
+.side .map img{width:auto;max-width:100%;max-height:calc(100vh - 350px);min-height:200px;object-fit:contain}
+.side .log{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.side .log div{padding:6px 8px;font-size:12px}
+.side .log b{font-size:13px}
+.side .lockrow span{width:36px;height:42px;font-size:20px}
+.main{display:flex;flex-direction:column;gap:22px;min-width:0}
+.main .status{top:env(safe-area-inset-top,0px)}
+.main{container-type:inline-size}
+@container (max-width:660px){.work{grid-template-columns:1fr}.kpwrap{width:100%}.kp button{height:42px}}
+@media (min-width:901px) and (max-width:1320px){.main .work{grid-template-columns:1fr}.main .kpwrap{width:100%}}
+@media (max-width:900px){
+  .side .map{width:auto}
+  .side .map img{width:100%;max-height:none;min-height:0}
+  .side .maptools .muted{display:inline}
+  .split{grid-template-columns:1fr}
+  .side{position:static;max-height:none;overflow:visible;padding:0}
+  .side .log{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+}
+.maphead{display:flex;flex-wrap:nowrap;gap:10px;align-items:flex-start}
+.maphead h2{flex:none;white-space:nowrap;line-height:1.5}
+.mapchips{flex:1;min-width:0;gap:4px}
+.mapchips .chip{font-size:11.5px;padding:1px 8px;background:var(--pen-soft);border-color:transparent;white-space:nowrap}
+.side .lockrow span{width:32px;height:36px;font-size:18px}
+.side .loghead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cert{display:flex;flex-direction:column;gap:10px;border-top:1px dashed var(--line);padding-top:14px;margin-top:6px}
+.cert h3{font:800 18px var(--display);margin:0}
+.cnames{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.cnames .f input{width:100%;box-sizing:border-box;font-family:var(--body)}
+details.teacher{font-size:14px}
+details.teacher summary{cursor:pointer;color:var(--muted)}
+details.teacher .tbody{display:flex;flex-direction:column;gap:10px;padding-top:10px}
+@keyframes pop{from{transform:scale(.98);opacity:.6}to{transform:none;opacity:1}}
+.q.active{animation:pop .35s ease-out}
+@media (prefers-reduced-motion:reduce){.q.active{animation:none}.status .bar i{transition:none}}
+@media (max-width:480px){.f input{width:84px}.f .tuple input{width:58px}}
+</style>
+<style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}</style>
+<script src="config.js"></script>
+</head>
+<body>
+
+<div class="wrap app">
+<div class="split">
+<aside class="side" aria-label="지도와 이동 기록">
+<section class="stage">
+  <div class="maphead"><h2>학교 지도</h2><div class="chips mapchips">
+    <span class="chip">원점 O = 정문 <b>(0, 0, 0)</b></span>
+    <span class="chip">1칸 = <b>4 m</b> (20 m = 5칸)</span>
+    <span class="chip">1층·지면 <b>z = 0</b></span>
+    <span class="chip">구름다리(3층) <b>z = 2</b></span>
+    <span class="chip">본관 5층, 옥상 <b>z = 5</b></span>
+  </div></div>
+  <div class="panel">
+    <div class="map">
+      <img src="map.jpg" alt="학교 배치도: 북쪽에 학교 앞 도로와 정문·후문, 서쪽에 45도 기울어진 본관과 중정·구름다리, 가운데 체육관, 동쪽에 주차장과 운동장" width="1438" height="1094">
+      <svg id="overlay" viewBox="0 0 1438 1094" aria-hidden="true"></svg>
+    </div>
+    <div class="maptools">
+      <label><input type="checkbox" id="gridToggle" checked> 좌표 모눈 (가는 선 1칸 = 4 m, 굵은 선 5칸 = 20 m)</label>
+      <span class="muted">원점 O는 정문이에요. 자 없이 모눈 칸 수를 세어 좌표를 읽으세요. 그림 왼쪽 아래 축은 방향만 나타내요.</span>
+    </div>
+  </div>
+</section>
+<section class="stage">
+  <div class="loghead"><h2>이동 기록과 자물쇠</h2><div class="lockrow" id="lockrow" aria-label="자물쇠 숫자"></div></div>
+  <div class="log" id="log"></div>
+</section>
+</aside>
+<main class="main">
+<header>
+  <span class="eyebrow">고2 기하 · 교내 방탈출 · 10문제</span>
+  <h1>좌표 탈출: 정문에서 후문까지</h1>
+  <p class="muted">답을 맞혀야 다음 문제가 열려요. 출구 문제(주황 테두리)를 풀면 다음 장소의 좌표가 나오고, 그곳에 다음 봉투가 있어요.</p>
+</header>
+<div class="status" aria-live="polite">
+  <span>진행 <b id="progTxt">0 / 10</b></span>
+  <span class="teamchip" id="teamChip">조 선택 전</span>
+  <span class="bar"><i id="progBar"></i></span>
+  <span class="penchip" id="penChip" hidden></span>
+  <button type="button" class="hintbtn" id="hintBtn" hidden>받은 힌트 0</button>
+  <button type="button" class="ghost sm" id="restartBtn">다시 풀기</button>
+</div>
+<section class="panel teampanel" id="teamPanel">
+  <h2>우리 조 선택</h2>
+  <p class="muted">조 대표 학생만 자기 조 버튼을 눌러 주세요. 문제를 풀 때마다 진행 상황이 선생님 화면에 전송돼요. 대표가 아니면 ‘개인 풀이’를 고르세요.</p>
+  <div class="teambtns" id="teamBtns"></div>
+  <p class="sync" id="syncTxt"></p>
+</section>
+<div id="stages" class="stage" style="gap:28px"></div>
+<details class="teacher panel">
+  <summary>교사용</summary>
+  <div class="tbody">
+    <div class="fields">
+      <div class="f"><label for="pin">교사 코드</label><input id="pin" type="password" autocomplete="off"></div>
+      <button type="button" id="pinBtn" class="ghost">열기</button>
+    </div>
+    <div id="tTools" hidden>
+      <div class="btns">
+        <button type="button" id="showAns" class="ghost">정답 보기</button>
+        <button type="button" id="skipBtn" class="ghost">현재 문제 통과 처리</button>
+        <button type="button" id="resetBtn" class="ghost">처음부터 다시</button>
+        <button type="button" id="codesBtn" class="ghost">장소 카드 단어 보기</button>
+      </div>
+      <div id="codeList" hidden></div>
+      <p class="muted" id="resetMsg" style="margin-top:8px"></p>
+    </div>
+  </div>
+</details>
+</main>
+</div>
+
+</div>
+
+
+<div class="hpop" id="hintPop" hidden role="alertdialog" aria-modal="true" aria-labelledby="hpTitle" aria-describedby="hpText">
+  <div class="hpbox">
+    <span class="hpicon" aria-hidden="true">💡</span>
+    <h2 id="hpTitle">선생님이 힌트를 보냈어요</h2>
+    <p class="hpfrom" id="hpFrom"></p>
+    <p class="hptext" id="hpText"></p>
+    <button type="button" id="hpOk">확인했어요</button>
+  </div>
+</div>
+<div class="hpop" id="hintList" hidden role="dialog" aria-modal="true" aria-labelledby="hlTitle">
+  <div class="hpbox" style="text-align:left">
+    <h2 id="hlTitle">받은 힌트</h2>
+    <ul class="hllist" id="hlList"></ul>
+    <button type="button" class="ghost" id="hlClose">닫기</button>
+  </div>
+</div>
+<div class="hpop" id="resetPop" hidden role="alertdialog" aria-modal="true" aria-labelledby="rpTitle">
+  <div class="hpbox" style="border-color:var(--pen)">
+    <span class="hpicon" aria-hidden="true">🔄</span>
+    <h2 id="rpTitle">선생님이 게임을 초기화했어요</h2>
+    <p class="hptext" style="background:var(--pen-soft);color:var(--ink);text-align:center">처음부터 다시 시작해요. 조 대표 학생은 자기 조 버튼을 다시 눌러 주세요.</p>
+    <button type="button" id="rpOk">확인</button>
+  </div>
+</div>
+<script>
+(function(){
+var TEACHER_PIN="mathchan";
+var O={x:350,y:125,u:21.4};
+function px(x,y){return [O.x+O.u*x, O.y-O.u*y];}
+
+var STAGES=[
+ {name:"정문",sub:"STAGE 1 · 벡터의 크기 · 단위벡터",color:"--s1",where:"시작 장소: 정문 G(0, 0, 0)"},
+ {name:"본관과 구름다리",sub:"STAGE 2 · 공간좌표",color:"--s2",where:"시작 장소: 본관 북쪽 현관"},
+ {name:"중정",sub:"STAGE 3 · 정사영 · 두 점 사이 거리",color:"--s3",where:"시작 장소: 구름다리 아래 1층 통로"},
+ {name:"운동장",sub:"STAGE 4 · 이차곡선",color:"--s4",where:"시작 장소: 운동장 중심 · 편의상 X = x − 32, Y = y + 22"},
+ {name:"주차장과 후문",sub:"STAGE 5 · 구 · 벡터의 합",color:"--s5",where:"시작 장소: 주차장 P(32, −4, 0)"}
+];
+
+/* 수식 해석: 12, −3, 4.24, 3/2, 4√2, √(36−23.04), 6cos30, 3², 2^3, π (삼각함수는 도 단위) */
+function num(src){
+  if(src==null)return NaN;
+  var s=String(src).trim().replace(/[−–]/g,"-").replace(/×/g,"*").replace(/÷/g,"/").replace(/π/g,"p").replace(/\s/g,"").replace(/,/g,".");
+  if(!s)return NaN;
+  var i=0;
+  function peek(){return s[i];}
+  function startsFactor(){var c=s[i];return c!==undefined&&(/[0-9.(p√]/.test(c)||s.substr(i,3)==="sin"||s.substr(i,3)==="cos"||s.substr(i,3)==="tan");}
+  function expr(){var v=term();while(peek()==="+"||peek()==="-"){var o=s[i++];var r=term();v=o==="+"?v+r:v-r;}return v;}
+  function term(){var v=unary();for(;;){if(peek()==="*"){i++;v*=unary();}else if(peek()==="/"){i++;v/=unary();}else if(startsFactor()){v*=power();}else break;}return v;}
+  function unary(){if(peek()==="-"){i++;return -unary();}if(peek()==="+"){i++;return unary();}return power();}
+  function power(){var b=postfix();if(peek()==="^"){i++;return Math.pow(b,unary());}return b;}
+  function postfix(){var v=primary();while(peek()==="²"){i++;v=v*v;}return v;}
+  function primary(){
+    var c=peek();
+    if(c==="("){i++;var v=expr();if(peek()===")")i++;else if(i<s.length)throw 0;return v;}
+    if(c==="p"){i++;return Math.PI;}
+    if(c==="√"){i++;return Math.sqrt(power());}
+    var fn=s.substr(i,3);
+    if(fn==="sin"||fn==="cos"||fn==="tan"){i+=3;var a=power()*Math.PI/180;return fn==="sin"?Math.sin(a):fn==="cos"?Math.cos(a):Math.tan(a);}
+    var m=s.slice(i).match(/^\d*\.?\d+|^\d+\./);if(!m)throw 0;i+=m[0].length;return parseFloat(m[0]);
+  }
+  try{var v=expr();if(i!==s.length)return NaN;return isFinite(v)?v:NaN;}catch(e){return NaN;}
+}
+function near(a,b,t){return Math.abs(a-b)<=(t||1e-6);}
+function vec(v,k,target,t){return near(num(v[k+"x"]),target[0],t)&&near(num(v[k+"y"]),target[1],t)&&near(num(v[k+"z"]),target[2],t);}
+
+var Q=[
+ {stage:0,title:"정문에서 후문으로",
+  html:'그림의 축척(약 20 m)으로 정문 G에서 후문 H까지의 벡터 <span class="c">GH</span>를 성분으로 나타내고, 실제 거리를 m로 구하라.',
+  fields:[{t:"vec",k:"v",label:"GH = ("},{t:"num",k:"d",label:"거리 (m)"}],
+  check:function(v){return vec(v,"v",[27,0,0])&&near(num(v.d),108,2);},
+  hint:"축척 막대 20 m가 5칸이에요. 지도의 모눈에서 정문(O)부터 후문까지 칸 수를 세어 보세요. 정문과 후문은 같은 도로변이라 y, z 성분은 0이에요.",
+  ans:"GH = (27, 0, 0), 27칸 × 4 m = 108 m",
+  after:"이 벡터를 기록지에 크게 적어 두세요. 마지막 문제에서 다시 써요."},
+ {stage:0,exit:true,title:"출구: 기울어진 본관",
+  html:'지도에서 본관의 긴 벽은 북서–남동 방향으로 비스듬히 놓여 있다. 이 벽을 따라 <b>남동쪽</b>을 가리키는 벡터는 <span class="c">v = (1, −1, 0)</span>이다.<br>① 벡터 v의 크기 <span class="c">|v|</span>를 구하라.<br>② v와 방향이 같은 단위벡터 <span class="c">u</span>를 구하라. (u = v ÷ |v|)<br>③ 정문 G(0, 0, 0)에서 <span class="c">u</span> 방향으로 <b>8√2칸(약 45 m)</b> 이동한 점 E의 좌표를 구하라. (E = G + 8√2·u, 지면 위 이동)',
+  fields:[{t:"num",k:"m",label:"① |v|"},{t:"vec",k:"u",label:"② u = ("},{t:"vec",k:"e",label:"③ E = ("}],
+  check:function(v){return near(num(v.m),Math.SQRT2,0.01)&&vec(v,"u",[1/Math.SQRT2,-1/Math.SQRT2,0],0.01)&&vec(v,"e",[8,-8,0]);},
+  hint:"① |v| = √(1² + (−1)² + 0²). ② 각 성분을 |v|로 나누면 돼요 (1/√2처럼 입력). ③ 8√2 × u = (8, −8, 0)을 정문 (0, 0, 0)에 더하세요.",
+  ans:"|v| = √2, u = (1/√2, −1/√2, 0), 8√2·u = (8, −8, 0) → E(8, −8, 0)",
+  after:"다음 장소: E(8, −8, 0) 본관 북쪽 현관으로 가세요.",
+  gate:{place:"본관 북쪽 현관 E(8, −8, 0)",code:"해바라기",key:"E"}, digit:8, move:{name:"G → E",v:"(8, −8, 0)"}, place:"E"},
+ {stage:1,title:"구름다리 길이와 내분점",
+  html:'3층 구름다리의 양 끝은 <span class="c">A(3, −19, 2)</span>, <span class="c">B(6, −16, 2)</span>이다. 길이 AB를 칸 단위로 구하고(소수 둘째 자리 또는 √ 사용), AB를 2:1로 내분하는 점 M의 좌표를 구하라. 실제로 걸음 수로 길이를 재 보고, 구한 점 M으로 가라.',
+  fields:[{t:"num",k:"l",label:"AB (칸)"},{t:"vec",k:"m",label:"M = ("}],
+  check:function(v){return near(num(v.l),Math.sqrt(18),0.02)&&vec(v,"m",[5,-17,2]);},
+  hint:"AB = √(3² + 3² + 0²). 2:1 내분점은 (A + 2B) / 3이에요.",
+  ans:"AB = 3√2 ≈ 4.24칸 ≈ 17 m, M(5, −17, 2)",
+  gate:{place:"구름다리 위 2:1 내분점 M(5, −17, 2)",code:"구름빵",key:"M"}, after:"다음 장소: 구름다리 위 M(5, −17, 2)으로 가세요.", place:"M"},
+ {stage:1,exit:true,title:"출구: 구름다리와 1층 복도",
+  html:'3층 구름다리는 직선 <span class="c">(3, −19, 2) + s(1, 1, 0)</span> 위에, 그 아래 1층 복도는 직선 <span class="c">(5, −17, 0) + t(1, −1, 0)</span> 위에 있다. 위에서 내려다보면 두 직선은 X자로 엇갈리지만, 높이가 달라 실제로는 만나지 않는다.<br>① 두 직선의 위치 관계를 골라라.<br>② 두 직선 사이의 거리(칸)를 구하라.<br>③ 3번에서 구한 구름다리 위의 점 <span class="c">M(5, −17, 2)</span>에서 <b>바로 아래로 내려가</b> 1층 바닥(z = 0)에 닿은 점 N의 좌표를 구하라.',
+  fields:[{t:"sel",k:"r",label:"① 위치 관계",opts:["선택","평행","한 점에서 만남","꼬인 위치"]},{t:"num",k:"d",label:"② 거리 (칸)"},{t:"vec",k:"n",label:"③ N = ("}],
+  check:function(v){return v.r==="꼬인 위치"&&near(num(v.d),2,0.01)&&vec(v,"n",[5,-17,0]);},
+  hint:"평행하지도 않고 만나지도 않는 두 직선은 꼬인 위치예요. 거리는 z좌표의 차 2 − 0이에요. 바로 아래로 내려가면 x, y좌표는 그대로이고 z만 0이 돼요.",
+  ans:"꼬인 위치, 거리 2칸(8 m), N(5, −17, 0) — 선분 MN은 두 직선에 동시에 수직(공통수선)이고, N은 1층 복도 직선 위의 점(t = 0)이에요.",
+  after:"다음 장소: N(5, −17, 0) 구름다리 바로 아래 1층 통로(중정 입구)로 가세요.",
+  gate:{place:"구름다리 아래 1층 통로 N(5, −17, 0)",code:"종이배",key:"N"}, digit:2, move:{name:"E → N",v:"(−3, −9, 0)"}, place:"N"},
+ {stage:2,title:"구름다리에서 내린 줄의 그림자",
+  html:'3번에서 구한 구름다리 위의 점 <span class="c">M(5, −17, 2)</span>에서 중정 잔디밭의 북서쪽 모서리 <span class="c">C(7, −19, 0)</span>까지 줄을 팽팽하게 당겼다. 해가 바로 위에 있다고 할 때, 줄 MC가 중정 바닥(z = 0)에 만드는 그림자(정사영)의 길이를 구하라. 또 줄과 바닥이 이루는 각을 θ라 할 때 cos θ의 값은?',
+  fields:[{t:"num",k:"p",label:"정사영 길이 (칸)"},{t:"num",k:"c",label:"cos θ"}],
+  check:function(v){return near(num(v.p),2*Math.sqrt(2),0.01)&&near(num(v.c),Math.sqrt(6)/3,0.005);},
+  hint:"M을 바닥에 정사영한 점은 M′(5, −17, 0)이에요. 그림자 길이는 M′C, 줄의 길이는 MC이고, (정사영 길이) = (줄의 길이) × cos θ 예요.",
+  ans:"정사영 M′C = √(4 + 4) = 2√2 ≈ 2.83칸, 줄 MC = √(4 + 4 + 4) = 2√3, cos θ = 2√2 / 2√3 = √6/3 ≈ 0.816",
+  after:"정사영의 길이는 원래 길이에 cos θ를 곱한 것과 같아요."},
+ {stage:2,exit:true,title:"출구: 잔디밭 한가운데",
+  html:'중정 입구 <span class="c">N(5, −17, 0)</span>에서 중정 잔디밭 한가운데 점 <span class="c">D(8, −21, 0)</span>까지의 거리 d(칸)를 구하라. 다음 장소는 <span class="c">N + (d + 22, −d, 0)</span>이다.',
+  fields:[{t:"num",k:"d",label:"d (칸)"},{t:"vec",k:"p",label:"다음 장소 = ("}],
+  check:function(v){return near(num(v.d),5,0.01)&&vec(v,"p",[32,-22,0]);},
+  hint:"두 점 사이의 거리는 √((x차)² + (y차)² + (z차)²) 예요. x는 3, y는 4만큼 차이 나고 z는 같아요.",
+  ans:"d = √(9 + 16 + 0) = 5 (20 m), 다음 장소 (5 + 27, −17 − 5, 1) = (32, −22, 0)",
+  after:"다음 장소: F(32, −22, 0) 운동장 중심으로 가세요.",
+  digit:5, move:{name:"N → F",v:"(27, −5, 0)"}, place:"F"},
+ {stage:3,title:"타원 트랙",
+  html:'운동장 중심 F를 원점으로 하는 평면좌표 <span class="c">X = x − 32</span>, <span class="c">Y = y + 22</span>를 잡자. 이 좌표에서 남북(Y축) 길이 20칸, 동서(X축) 길이 12칸인 타원 트랙의 방정식은 <span class="c">X²/6² + Y²/10² = 1</span>이다.<br>① 이 타원의 초점 중 하나가 <span class="c">(0, c)</span> <span class="c">(c &gt; 0)</span>일 때, c의 값을 구하라.<br>② 북쪽 초점 F₁에 공이 하나 놓여 있다. 공은 지면 위에 있다고 할 때, 이 공의 실제 좌표 <span class="c">(x, y, z)</span>를 구하라.',
+  fields:[{t:"num",k:"c",label:"c (초점 (0, c), c > 0)"},{t:"vec",k:"f",label:"공의 좌표 = ("}],
+  check:function(v){return near(num(v.c),8,0.01)&&vec(v,"f",[32,-14,0]);},
+  hint:"장축이 Y축(남북) 방향이라 초점이 Y축 위에 있어요. c² = 10² − 6². 공의 실제 좌표는 x = X + 32, y = Y − 22이고, 공이 지면 위에 있으니 z = 0이에요.",
+  ans:"X²/36 + Y²/100 = 1, c = 8, 공(북쪽 초점 F₁)의 좌표 (32, −14, 0). 남쪽 초점 F₂는 (32, −30, 0)",
+  after:"두 초점의 위치는 8번에서 다시 써요.", place:"F12"},
+ {stage:3,exit:true,title:"출구: 호루라기 쌍곡선",
+  html:'<b>7번에서 구한 타원 트랙의 두 초점</b> <span class="c">F₁(32, −14, 0)</span>, <span class="c">F₂(32, −30, 0)</span>에서 동시에 호루라기를 분다. 두 초점까지의 거리의 차가 <b>12칸</b>으로 일정한 점들은 쌍곡선을 이룬다. 7번과 같은 XY 좌표(운동장 중심이 원점)에서 이 쌍곡선의 방정식을 <span class="c">X²/a² − Y²/b² = −1</span>이라 하자.<br>① a²의 값을 구하라.<br>② 이 쌍곡선의 두 꼭짓점 중 <b>북쪽 꼭짓점</b> X의 실제 좌표 <span class="c">(x, y, z)</span>를 구하라. (지면 위의 점)',
+  fields:[{t:"num",k:"a",label:"① a²"},{t:"vec",k:"x",label:"② X = ("}],
+  check:function(v){return near(num(v.a),28,0.01)&&vec(v,"x",[32,-16,0]);},
+  hint:"초점이 Y축 위에 있는 쌍곡선 X²/a² − Y²/b² = −1에서 거리의 차는 2b예요. 그래서 b = 6, 초점이 (0, ±8)이라 c = 8이고, c² = a² + b² 이에요. 꼭짓점은 (0, ±b)이고, 실제 좌표는 x = X + 32, y = Y − 22, z = 0이에요.",
+  ans:"2b = 12 → b = 6, c = 8 → a² = 64 − 36 = 28, 쌍곡선 X²/28 − Y²/36 = −1. 북쪽 꼭짓점 (X, Y) = (0, 6) → X(32, −16, 0)",
+  after:"다음 장소: 주차장 P(32, −4, 0). 꼭짓점 X에서 북쪽으로 12칸(48 m) 가면 돼요.",
+  move:[{name:"F → X",v:"(0, 6, 0)"},{name:"X → P",v:"(0, 12, 0)"}], place:"XP"},
+ {stage:4,exit:true,title:"출구: 스피커 소리의 경계",
+  html:'체육관 지붕(z = 3)의 스피커 <span class="c">K(21, −6, 3)</span> 소리는 K를 중심으로 하고 반지름이 9칸인 구 안에서만 들린다.<br>① 정문 <span class="c">G(0, 0, 0)</span>과 후문 <span class="c">H(27, 0, 0)</span>의 좌표를 각각 이 구의 방정식의 좌변에 대입한 값을 구하라.<br>② 정문과 후문 중 구 위에 있는 문을 골라라.',
+  fields:[{t:"num",k:"pg",label:"① 정문 대입값"},{t:"num",k:"ph",label:"① 후문 대입값"},{t:"sel",k:"g",label:"② 구 위의 문",opts:["선택","정문","후문"]}],
+  check:function(v){return near(num(v.pg),486,0.01)&&near(num(v.ph),81,0.01)&&v.g==="후문";},
+  hint:"(x − 21)² + (y + 6)² + (z − 3)² = 81 이에요. 정문은 (0 − 21)² + (0 + 6)² + (0 − 3)², 후문은 (27 − 21)² + (0 + 6)² + (0 − 3)²를 계산해 보세요. 좌변 값이 81과 같으면 구 위의 점이에요.",
+  ans:"구의 방정식 (x − 21)² + (y + 6)² + (z − 3)² = 81. 정문 대입값 441 + 36 + 9 = 486, 후문 대입값 36 + 36 + 9 = 81 → 후문이 구 위에 있음",
+  after:"다음 장소: 후문 H(27, 0, 0). 보물상자가 있어요! 마지막 자물쇠 숫자를 얻었어요.", digit:8, gate:{place:"후문 H(27, 0, 0)",code:"보물지도",key:"H"}, move:{name:"P → H",v:"(−5, 4, 0)"}, place:"H"},
+ {stage:4,exit:true,final:true,title:"최종: 벡터의 합",
+  html:'이동 기록에 모인 벡터 ①~⑥을 모두 더하라. 그리고 모은 숫자 4개로 보물상자 자물쇠 번호를 입력하라.',
+  fields:[{t:"vec",k:"s",label:"합 = ("},{t:"num",k:"code",label:"자물쇠 번호"}],
+  check:function(v){return vec(v,"s",[27,0,0],0.01)&&String(v.code).replace(/\D/g,"")==="8258";},
+  hint:"합은 1번 답과 비교해 보세요. 자물쇠 숫자는 얻은 순서대로예요.",
+  ans:"(27, 0, 0) = GH, 자물쇠 8258",
+  after:""}
+];
+
+var PLACES={G:[0,0],E:[8,-8],M:[5,-17],N:[5,-17],F:[32,-22],F1:[32,-14],F2:[32,-30],X:[32,-16],P:[32,-4],H:[27,0]};
+var LS="coord-escape-v2";
+var st={solved:0,start:Date.now(),hints:0,hintSeen:{},teacher:false,showAns:false,end:null,arrived:{},skipped:{}};
+try{var saved=JSON.parse(localStorage.getItem(LS)||"null");if(saved&&typeof saved.solved==="number"){st=Object.assign(st,saved);st.teacher=false;st.showAns=false;}}catch(e){}
+function save(){try{localStorage.setItem(LS,JSON.stringify({solved:st.solved,start:st.start,hints:st.hints,hintSeen:st.hintSeen,end:st.end,arrived:st.arrived,skipped:st.skipped}));}catch(e){}}
+
+function el(tag,attrs,html){var e=document.createElement(tag);if(attrs)for(var k in attrs){if(k==="class")e.className=attrs[k];else e.setAttribute(k,attrs[k]);}if(html!=null)e.innerHTML=html;return e;}
+
+function fieldsHTML(q,i){
+  var h='<div class="fields">';
+  q.fields.forEach(function(f){
+    var id="q"+i+"_"+f.k;
+    if(f.t==="vec"){
+      h+='<div class="f"><span>'+f.label.replace(" = (","")+'</span><span class="tuple">(<input class="mi" id="'+id+'x" aria-label="'+(f.ph||"xyz")[0]+'" placeholder="'+(f.ph||"xyz")[0]+'" autocomplete="off">,<input class="mi" id="'+id+'y" aria-label="'+(f.ph||"xyz")[1]+'" placeholder="'+(f.ph||"xyz")[1]+'" autocomplete="off">,<input class="mi" id="'+id+'z" aria-label="'+(f.ph||"xyz")[2]+'" placeholder="'+(f.ph||"xyz")[2]+'" autocomplete="off">)</span></div>';
+    }else if(f.t==="sel"){
+      h+='<div class="f wide"><label for="'+id+'">'+f.label+'</label><select id="'+id+'">'+f.opts.map(function(o){return '<option>'+o+'</option>';}).join("")+'</select></div>';
+    }else{
+      h+='<div class="f'+(f.k==="code"?' wide':'')+'"><label for="'+id+'">'+f.label+'</label><input class="mi" id="'+id+'" autocomplete="off"></div>';
+    }
+  });
+  return h+'</div>';
+}
+function readVals(q,i){
+  var v={};
+  q.fields.forEach(function(f){
+    var id="q"+i+"_"+f.k;
+    if(f.t==="vec"){["x","y","z"].forEach(function(a){v[f.k+a]=document.getElementById(id+a).value;});}
+    else v[f.k]=document.getElementById(id).value;
+  });
+  return v;
+}
+
+var KEYS=[["sin","cos","tan","√","^"],["7","8","9","(",")"],["4","5","6","×","÷"],["1","2","3","+","−"],["0",".","π","²","⌫"],["C","←","→","분수","다음 칸"]];
+var kbOn=true; try{kbOn=localStorage.getItem("coord-kb")!=="off";}catch(e){}
+function keypadHTML(){
+  var h='<div class="kpwrap"><div class="kphead"><span>공학용 키보드</span><button type="button" class="ghost sm" data-act="kbtoggle">'+(kbOn?'숨기기':'보이기')+'</button></div><div class="kp"'+(kbOn?'':' hidden')+'>';
+  KEYS.forEach(function(r){r.forEach(function(k){var cls=/^[0-9.]$/.test(k)?"d":(k==="다음 칸"?"next":(k==="분수"?"frac":(k==="C"||k==="⌫"?"fn":"op")));
+    var lab=k==="분수"?'<span class="fk"><i>□</i><b></b><i>□</i></span>':k;
+    h+='<button type="button" class="key-'+cls+'" data-k="'+k+'" aria-label="'+(k==="⌫"?"지우기":k==="C"?"칸 비우기":k)+'">'+lab+'</button>';});});
+  return h+'</div></div>';
+}
+function fracWrap(t,isDen){
+  t=t.trim(); if(!t)return "";
+  if(isDen) return /^(\d+(\.\d+)?|√\d+(\.\d+)?|π)$/.test(t)?t:"("+t+")";
+  return /[+\-−]/.test(t.replace(/^[\-−]/,""))?"("+t+")":t;
+}
+function escH(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function mathHTML(raw){
+  var re=/(\([^()]*\)|[0-9.√π]+)\/(\([^()]*\)|[0-9.√π]+)/g,out="",last=0,m;
+  var strip=function(x){return x.charAt(0)==="("&&x.charAt(x.length-1)===")"?x.slice(1,-1):x;};
+  var fi=0;while((m=re.exec(raw))){out+=escH(raw.slice(last,m.index))+'<span class="fr" data-fi="'+(fi++)+'" title="눌러서 고치기"><span class="nu">'+escH(strip(m[1]))+'</span><span class="de">'+escH(strip(m[2]))+'</span></span>';last=re.lastIndex;}
+  return out+escH(raw.slice(last));
+}
+function updView(x){
+  var w=x.parentNode; if(!w||!w.classList.contains("mwrap"))return;
+  var has=/\//.test(x.value); w.classList.toggle("hasfrac",has);
+  w.querySelector(".mview").innerHTML=has?mathHTML(x.value)+'<span class="mcaret"></span>':"";
+}
+var FRAC_RE=/(\([^()]*\)|[0-9.√π]+)\/(\([^()]*\)|[0-9.√π]+)/g;
+function wireKeypad(card){
+  var inputs=[].slice.call(card.querySelectorAll("input.mi"));
+  var editFrac=function(){},delLast=function(x){};
+  inputs.forEach(function(x){
+    if(x.parentNode.classList.contains("mwrap"))return;
+    var w=document.createElement("span");w.className="mwrap";x.parentNode.insertBefore(w,x);w.appendChild(x);
+    var v=document.createElement("span");v.className="mview";v.setAttribute("aria-hidden","true");w.appendChild(v);
+    x.addEventListener("input",function(){updView(x);});updView(x);
+    x.addEventListener("focus",function(){w.classList.add("focus");if(w.classList.contains("hasfrac")){var n=x.value.length;setTimeout(function(){try{x.setSelectionRange(n,n);}catch(e){}},0);}});
+    x.addEventListener("blur",function(){w.classList.remove("focus");});
+    x.addEventListener("keydown",function(e){if(e.key==="Backspace"&&w.classList.contains("hasfrac")){e.preventDefault();delLast(x);}});
+    v.addEventListener("click",function(e){var f=e.target.closest(".fr");if(f){e.preventDefault();editFrac(x,Number(f.getAttribute("data-fi")));}else x.focus();});
+  });
+  var fe=document.createElement("div");fe.className="fedit";fe.hidden=true;
+  fe.innerHTML='<span class="pre"></span><span class="stack"><input class="fi" data-f="n" placeholder="분자" aria-label="분자" autocomplete="off"><span class="bar"></span><input class="fi" data-f="d" placeholder="분모" aria-label="분모" autocomplete="off"></span><span class="fbtns"><button type="button" data-act="fracok" aria-label="분수 넣기">넣기</button><button type="button" class="ghost" data-act="fraccancel" aria-label="취소">✕</button></span>';
+  var fn=fe.querySelector('[data-f="n"]'),fd=fe.querySelector('[data-f="d"]'),pre=fe.querySelector(".pre");
+  var last=inputs[0], target=null, tpos=0, tend=0;
+  function setMode(){inputs.concat([fn,fd]).forEach(function(x){if(kbOn)x.setAttribute("inputmode","none");else x.removeAttribute("inputmode");});}
+  function mark(x){inputs.concat([fn,fd]).forEach(function(y){y.classList.toggle("cur",y===x);});}
+  inputs.forEach(function(x){x.addEventListener("focus",function(){if(!fe.hidden)return;last=x;mark(x);});});
+  [fn,fd].forEach(function(x){x.addEventListener("focus",function(){last=x;mark(x);});});
+  function openFrac(edit){
+    target=(inputs.indexOf(last)>=0)?last:inputs[0];
+    var v=target.value;
+    if(edit){tpos=edit.s;tend=edit.e;}else if(target.parentNode.classList.contains("hasfrac")){tpos=tend=v.length;}
+    else{tpos=target.selectionStart==null?v.length:target.selectionStart;tend=target.selectionEnd==null?v.length:target.selectionEnd;}
+    pre.innerHTML=mathHTML(v.slice(0,tpos));fn.value=edit?edit.n:"";fd.value=edit?edit.d:"";
+    target.parentNode.appendChild(fe);fe.hidden=false;last=fn;fn.focus();mark(fn);
+  }
+  function closeFrac(insert){
+    if(insert&&target){var a=fracWrap(fn.value,false),b=fracWrap(fd.value,true);
+      if(!a||!b){var e=a?fd:fn;e.focus();last=e;mark(e);return;}
+      var s=a+"/"+b,v=target.value;target.value=v.slice(0,tpos)+s+v.slice(tend);updView(target);
+      var c=tpos+s.length;try{target.setSelectionRange(c,c);}catch(e){}}
+    fe.hidden=true;if(fe.parentNode)fe.parentNode.removeChild(fe);
+    last=target||inputs[0];target=null;mark(last);last.focus();
+  }
+  var stripP=function(x){return x.charAt(0)==="("&&x.charAt(x.length-1)===")"?x.slice(1,-1):x;};
+  editFrac=function(x,idx){var m,k=0;FRAC_RE.lastIndex=0;while((m=FRAC_RE.exec(x.value))){if(k++===idx){last=x;if(!fe.hidden)closeFrac(false);last=x;openFrac({s:m.index,e:FRAC_RE.lastIndex,n:stripP(m[1]),d:stripP(m[2])});return;}}};
+  delLast=function(x){var v=x.value,m,lastM=null;FRAC_RE.lastIndex=0;while((m=FRAC_RE.exec(v))){lastM={s:m.index,e:FRAC_RE.lastIndex};}
+    if(lastM&&lastM.e===v.length)x.value=v.slice(0,lastM.s);else x.value=v.slice(0,-1);updView(x);var n=x.value.length;try{x.setSelectionRange(n,n);}catch(e){}};
+  fe.querySelector('[data-act="fracok"]').onclick=function(){closeFrac(true);};
+  fe.querySelector('[data-act="fraccancel"]').onclick=function(){closeFrac(false);};
+  [fn,fd].forEach(function(x){x.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();e.stopPropagation();if(x===fn){fd.focus();}else closeFrac(true);}else if(e.key==="Escape")closeFrac(false);});});
+  setMode();
+  card.querySelector('[data-act="kbtoggle"]').onclick=function(){kbOn=!kbOn;try{localStorage.setItem("coord-kb",kbOn?"on":"off");}catch(e){}
+    card.querySelector(".kp").hidden=!kbOn;this.textContent=kbOn?"숨기기":"보이기";setMode();};
+  [].forEach.call(card.querySelectorAll(".kp button"),function(b){
+    b.addEventListener("mousedown",function(e){e.preventDefault();});
+    b.addEventListener("click",function(){
+      if(!last)return; var k=b.getAttribute("data-k");
+      if(k==="분수"){if(fe.hidden)openFrac();else{fd.focus();}return;}
+      var v=last.value,a=last.selectionStart==null?v.length:last.selectionStart,z=last.selectionEnd==null?v.length:last.selectionEnd;
+      var fm=last.parentNode&&last.parentNode.classList.contains("hasfrac");
+      if(fm&&(k==="←"||k==="→")){last.focus();return;}
+      if(fm){a=z=v.length;}
+      if(k==="⌫"){if(fm){delLast(last);last.focus();mark(last);return;}if(a===z&&a>0)a--;last.value=v.slice(0,a)+v.slice(z);last.setSelectionRange(a,a);}
+      else if(k==="C"){last.value="";}
+      else if(k==="←"){var p=Math.max(0,a-1);last.setSelectionRange(p,p);}
+      else if(k==="→"){var p2=Math.min(v.length,z+1);last.setSelectionRange(p2,p2);}
+      else if(k==="다음 칸"){if(!fe.hidden){if(last===fn){last=fd;}else{closeFrac(true);return;}}else{var idx=inputs.indexOf(last);last=inputs[(idx+1)%inputs.length];}}
+      else{last.value=v.slice(0,a)+k+v.slice(z);var c=a+k.length;last.setSelectionRange(c,c);}
+      updView(last);last.focus();mark(last);
+    });
+  });
+}
+var pads={};
+var penMode={seen:false};
+function restart(){
+  st.solved=0;st.start=Date.now();st.hints=0;st.hintSeen={};st.end=null;st.arrived={};st.skipped={};pads={};save();render();drawMap();
+  window.scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+}
+function padHTML(i){
+  var p=pads[i]||{};
+  return '<div class="padwrap"'+(p.open?'':' hidden')+'><div class="padtools" role="toolbar" aria-label="연습장 도구">'+
+    '<button type="button" class="tool on" data-tool="pen" data-color="--ink" aria-label="검정 펜"><i style="background:var(--ink)"></i>펜</button>'+
+    '<button type="button" class="tool" data-tool="pen" data-color="--pen" aria-label="파랑 펜"><i style="background:var(--pen)"></i></button>'+
+    '<button type="button" class="tool" data-tool="pen" data-color="--bad" aria-label="빨강 펜"><i style="background:var(--bad)"></i></button>'+
+    '<button type="button" class="tool" data-tool="eraser">지우개</button>'+
+    '<span class="sp"></span>'+
+    '<button type="button" class="tool" data-tool="undo">되돌리기</button>'+
+    '<button type="button" class="tool danger" data-tool="clear">모두 지우기</button>'+
+    '</div><canvas class="pad" aria-label="펜으로 쓰는 연습장"></canvas></div>';
+}
+function wirePad(card,i){
+  var wrap=card.querySelector(".padwrap"),btn=card.querySelector('[data-act="pad"]'),cv=wrap.querySelector("canvas");
+  pads[i]=pads[i]||{open:false,img:null,hist:[]};
+  var P=pads[i],ctx=null,W=0,H=300,tool="pen",color="--ink",drawing=false,lx=0,ly=0,active=null,mx=0,my=0;
+  function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()||"#000";}
+  function init(){
+    W=wrap.clientWidth; if(!W)return; var d=window.devicePixelRatio||1;
+    cv.width=Math.round(W*d); cv.height=Math.round(H*d); cv.style.height=H+"px";
+    ctx=cv.getContext("2d"); ctx.setTransform(d,0,0,d,0,0); ctx.lineCap="round"; ctx.lineJoin="round";
+    if(P.img){var im=new Image();im.onload=function(){ctx.drawImage(im,0,0,W,H);};im.src=P.img;}
+  }
+  function snap(){try{P.img=cv.toDataURL("image/png");}catch(e){}}
+  function pos(e){var r=cv.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top];}
+  cv.addEventListener("pointerdown",function(e){
+    if(e.pointerType==="pen")penMode.seen=true;
+    if(e.pointerType==="touch"&&(penMode.seen||e.width>30||e.height>30)){e.preventDefault();return;}
+    if(drawing){if(e.pointerType==="pen"&&active!==null){drawing=false;}else return;}
+    if(!ctx)init(); if(!ctx)return; e.preventDefault(); active=e.pointerId; cv.setPointerCapture(e.pointerId);
+    P.hist.push(P.img);if(P.hist.length>20)P.hist.shift();
+    drawing=true; var p=pos(e); lx=p[0]; ly=p[1]; mx=lx; my=ly;
+    ctx.globalCompositeOperation=tool==="eraser"?"destination-out":"source-over";
+    ctx.strokeStyle=css(color); ctx.lineWidth=tool==="eraser"?24:(e.pointerType==="pen"&&e.pressure?1.2+2.6*e.pressure:2.6);
+    ctx.beginPath(); ctx.arc(lx,ly,ctx.lineWidth/2,0,Math.PI*2); ctx.fillStyle=ctx.strokeStyle; ctx.fill();
+  });
+  cv.addEventListener("pointermove",function(e){
+    if(!drawing||e.pointerId!==active)return; e.preventDefault();
+    var evs=(e.getCoalescedEvents&&e.getCoalescedEvents())||[]; if(!evs.length)evs=[e];
+    evs.forEach(function(ev){
+      var p=pos(ev); if(Math.abs(p[0]-lx)+Math.abs(p[1]-ly)<0.6)return;
+      if(tool!=="eraser"&&ev.pointerType==="pen"&&ev.pressure)ctx.lineWidth=ctx.lineWidth*0.6+(1.1+2.8*ev.pressure)*0.4;
+      var nx=(lx+p[0])/2, ny=(ly+p[1])/2;
+      ctx.beginPath(); ctx.moveTo(mx,my); ctx.quadraticCurveTo(lx,ly,nx,ny); ctx.stroke();
+      mx=nx; my=ny; lx=p[0]; ly=p[1];
+    });
+  });
+  function end(e){if(drawing&&e.pointerId===active){ctx.beginPath();ctx.moveTo(mx,my);ctx.lineTo(lx,ly);ctx.stroke();drawing=false;active=null;snap();}}
+  cv.addEventListener("contextmenu",function(e){e.preventDefault();});
+  cv.addEventListener("pointerup",end); cv.addEventListener("pointercancel",end); cv.addEventListener("lostpointercapture",end);
+  [].forEach.call(wrap.querySelectorAll(".tool"),function(b){
+    b.addEventListener("click",function(){
+      var t=b.getAttribute("data-tool");
+      if(t==="clear"){if(!ctx)init(); if(ctx){P.hist.push(P.img);ctx.clearRect(0,0,W,H);P.img=null;} return;}
+      if(t==="undo"){if(!ctx)init(); if(!ctx||!P.hist.length)return; var prev=P.hist.pop(); ctx.clearRect(0,0,W,H); P.img=prev;
+        if(prev){var im=new Image();im.onload=function(){ctx.globalCompositeOperation="source-over";ctx.drawImage(im,0,0,W,H);};im.src=prev;} return;}
+      tool=t; if(t==="pen")color=b.getAttribute("data-color");
+      [].forEach.call(wrap.querySelectorAll('.tool[data-tool="pen"],.tool[data-tool="eraser"]'),function(x){x.classList.toggle("on",x===b);});
+    });
+  });
+  btn.onclick=function(){P.open=!P.open; wrap.hidden=!P.open; btn.textContent=P.open?"연습장 닫기":"연습장 열기"; if(P.open&&!ctx)requestAnimationFrame(init);};
+  if(P.open)requestAnimationFrame(init);
+}
+var restartArmed=null;
+document.getElementById("restartBtn").onclick=function(){
+  var b=this;
+  if(!restartArmed){b.textContent="정말 처음부터? 한 번 더";b.classList.remove("ghost");restartArmed=setTimeout(function(){restartArmed=null;b.textContent="다시 풀기";b.classList.add("ghost");},4000);return;}
+  clearTimeout(restartArmed);restartArmed=null;b.textContent="다시 풀기";b.classList.add("ghost");restart();
+};
+function norm(t){return String(t||"").replace(/\s/g,"").toLowerCase();}
+function penalty(){var n=0;for(var k in (st.skipped||{}))if(st.skipped[k])n++;return n;}
+function pendingGate(){var k=st.solved-1;return (k>=0&&Q[k]&&Q[k].gate&&!st.arrived[k])?k:-1;}
+function arrivalCard(k){
+  var g=Q[k].gate,c=el("div",{class:"q arrive"});
+  c.innerHTML='<div class="top"><span class="n">도착</span><h3>장소 도착 확인</h3></div><p><b>'+g.place+'</b>에 가서 숨겨진 카드를 찾으세요. 카드에 적힌 단어를 입력하면 다음 문제가 열려요.</p>'+
+    '<div class="fields"><div class="f wide"><label for="arr'+k+'">카드의 단어</label><input id="arr'+k+'" autocomplete="off"></div><button type="button" data-act="arr">도착 확인</button></div><div class="giveup"><button type="button" class="ghost sm danger" data-act="giveup">카드를 도저히 못 찾겠어요</button><span class="muted">누르면 다음 문제가 열리지만 감점 −1이에요.</span></div><div class="msg" aria-live="polite"></div>'+
+    (st.showAns?'<div class="ans">교사용: 카드 단어 '+g.code+'</div>':'');
+  var go=function(){
+    if(norm(c.querySelector("input").value)===norm(g.code)){st.arrived[k]=1;save();render();drawMap();
+      var nx=document.querySelector(".q.active")||document.getElementById("winBox");if(nx)nx.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"center"});}
+    else c.querySelector(".msg").innerHTML='<div class="fb bad">카드의 단어와 달라요. 그 장소에 있는 카드를 다시 확인하세요.</div>';
+  };
+  c.querySelector('[data-act="arr"]').onclick=go;
+  var gb=c.querySelector('[data-act="giveup"]'),armed=null;
+  gb.onclick=function(){
+    if(!armed){gb.textContent="정말 넘길까요? 감점 −1 (한 번 더 누르기)";gb.classList.remove("ghost");armed=setTimeout(function(){armed=null;gb.textContent="카드를 도저히 못 찾겠어요";gb.classList.add("ghost");},5000);return;}
+    clearTimeout(armed);armed=null;st.arrived[k]=1;st.skipped[k]=1;save();render();drawMap();
+    var nx=document.querySelector(".q.active")||document.getElementById("winBox");if(nx)nx.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"center"});
+  };
+  c.querySelector("input").addEventListener("keydown",function(e){if(e.key==="Enter")go();});
+  return c;
+}
+/* ---- 조 선택과 진행 상황 전송 (구글 시트) ---- */
+var TEAM_LS="coord-team";
+var team=null; try{var tv=localStorage.getItem(TEAM_LS);team=tv?Number(tv):null;}catch(e){}
+var lastSent="", sendTimer=null;
+function placeKey(){var p="G",L={5:"F",7:"P"};for(var k=0;k<st.solved;k++){if(Q[k].gate){if(st.arrived[k])p=Q[k].gate.key;}else if(L[k])p=L[k];}return p;}
+function progressInfo(){
+  var k=pendingGate();
+  if(st.end)return {current:10,moving:false,done:true,status:"탈출 성공!",place:"H",target:""};
+  if(k>=0)return {current:st.solved+1,moving:true,done:false,status:"이동 중 → "+Q[k].gate.place,place:placeKey(),target:Q[k].gate.key};
+  return {current:st.solved+1,moving:false,done:false,status:(st.solved+1)+"번 풀이 중 · "+Q[st.solved].title,place:placeKey(),target:""};
+}
+function setSync(text,cls){var e=document.getElementById("syncTxt");if(e){e.textContent=text;e.className="sync "+(cls||"");}}
+var pendingSend=false, sending=false, pendingAcks=[];
+function postJSON(url,obj,ms){
+  var ctl=window.AbortController?new AbortController():null, tm=ctl?setTimeout(function(){ctl.abort();},ms||15000):null;
+  return fetch(url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(obj),signal:ctl?ctl.signal:undefined})
+    .then(function(r){if(tm)clearTimeout(tm);return r.json();},function(e){if(tm)clearTimeout(tm);throw e;});
+}
+function sendNow(force){
+  if(!team)return;
+  var url=(window.SCRIPT_URL||"").trim();
+  if(!url){setSync("교사용 주소가 아직 설정되지 않았어요 (config.js)","bad");return;}
+  var info=progressInfo(); var payload={action:"report",team:team,solved:st.solved,current:info.current,moving:info.moving,done:info.done,status:info.status,place:info.place,target:info.target,penalty:penalty(),epoch:myEpoch};
+  var sig=JSON.stringify(payload); if(!force&&sig===lastSent&&!pendingSend)return;
+  if(sending){pendingSend=true;return;}
+  lastSent=sig; sending=true;
+  if(!pendingSend)setSync("전송 중…","");
+  var done=function(ok,msg){sending=false;pendingSend=!ok;
+    if(ok)setSync(msg||"선생님께 전송됨 · "+new Date().toTimeString().slice(0,5),"ok");
+    else setSync("연결이 끊겼어요 · 다시 연결되면 자동으로 보내요 (푼 문제는 안전하게 저장돼 있어요)","bad");
+    if(ok)queueReport();};
+  postJSON(url,payload)
+    .then(function(j){if(j&&j.reset){sending=false;pendingSend=false;checkEpoch(j.epoch);return;}if(j&&j.ok)done(true);else done(false);})
+    .catch(function(){
+      if(navigator.onLine===false){done(false);return;}
+      fetch(url,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)})
+        .then(function(){done(true,"선생님께 전송함 · "+new Date().toTimeString().slice(0,5));})
+        .catch(function(){done(false);});
+    });
+}
+function flushAcks(){
+  var url=(window.SCRIPT_URL||"").trim(); if(!url||!pendingAcks.length)return;
+  pendingAcks.slice().forEach(function(a){
+    postJSON(url,{action:"ack",team:a.team,id:a.id}).then(function(j){if(j&&j.ok){var i=pendingAcks.indexOf(a);if(i>=0)pendingAcks.splice(i,1);}}).catch(function(){});
+  });
+}
+function retryAll(){if(team&&pendingSend)sendNow(true);flushAcks();}
+setInterval(retryAll,10000);
+window.addEventListener("online",function(){setSync("다시 연결됐어요 · 보내는 중…","");setTimeout(function(){retryAll();pollHints();},800);});
+window.addEventListener("offline",function(){if(team)setSync("연결이 끊겼어요 · 다시 연결되면 자동으로 보내요 (푼 문제는 안전하게 저장돼 있어요)","bad");});
+function queueReport(){clearTimeout(sendTimer);sendTimer=setTimeout(function(){sendNow(false);},400);}
+function renderTeam(){
+  var box=document.getElementById("teamBtns"); if(!box)return;
+  var h="";for(var t=1;t<=6;t++)h+='<button type="button" class="teambtn'+(team===t?" on":"")+'" data-t="'+t+'">'+t+'조</button>';
+  h+='<button type="button" class="teambtn solo'+(team===0?" on":"")+'" data-t="0">개인 풀이</button>';
+  box.innerHTML=h;
+  [].forEach.call(box.querySelectorAll("button"),function(b){b.onclick=function(){team=Number(b.getAttribute("data-t"));if(st.solved===0&&!st.end){st.start=Date.now();save();}try{localStorage.setItem(TEAM_LS,String(team));}catch(e){}renderTeam();lastSent="";gotHints=[];updHintBtn();if(team){sendNow(true);pollHints();}else setSync("개인 풀이는 기록되지 않아요","");};});
+  var chip=document.getElementById("teamChip");
+  chip.textContent=team?team+"조 대표":(team===0?"개인 풀이":"조 선택 전");
+  chip.className="teamchip"+(team?" on":"");
+  document.getElementById("teamPanel").classList.toggle("need",team===null);
+  if(team===null)setSync("조 대표 학생은 자기 조 버튼을 눌러 주세요","");
+}
+/* ---- 성공 확인증 PDF ---- */
+var NAMES_LS="coord-names";
+function loadNames(){try{return JSON.parse(localStorage.getItem(NAMES_LS)||"[]")||[];}catch(e){return [];}}
+function saveNames(a){try{localStorage.setItem(NAMES_LS,JSON.stringify(a));}catch(e){}}
+function teamLabel(){var t=(typeof team!=="undefined")?team:null;return t?t+"조":"개인 풀이";}
+function durText(ms){if(!(ms>0))return "-";var s=Math.round(ms/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60),r=s%60;return (h?h+"시간 ":"")+m+"분 "+r+"초";}
+function clockText(ms){var d=new Date(ms);return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
+function dateText(ms){var d=new Date(ms);return d.getFullYear()+"년 "+(d.getMonth()+1)+"월 "+d.getDate()+"일";}
+function certFormHTML(){
+  var names=loadNames(),h='<div class="cert"><h3>성공 확인증 발급</h3><p class="muted">조원 이름을 입력하고 버튼을 누르면 <b>'+teamLabel()+'</b>의 탈출 기록이 담긴 확인증 PDF를 받을 수 있어요.</p><div class="cnames">';
+  for(var i=0;i<6;i++)h+='<div class="f"><label for="cn'+i+'">조원 '+(i+1)+'</label><input id="cn'+i+'" maxlength="12" autocomplete="off" value="'+String(names[i]||"").replace(/"/g,"&quot;")+'"></div>';
+  return h+'</div><div class="btns"><button type="button" id="certBtn">성공 확인증 PDF 받기</button></div><p class="cmsg muted" id="certMsg" aria-live="polite"></p></div>';
+}
+function drawCert(names){
+  var W=1754,H=1240,cv=document.createElement("canvas");cv.width=W;cv.height=H;var g=cv.getContext("2d");
+  var F='"Gothic A1","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif',M='"IBM Plex Mono",ui-monospace,Menlo,monospace';
+  g.fillStyle="#FBFCFD";g.fillRect(0,0,W,H);
+  g.strokeStyle="#E3E9EE";g.lineWidth=1;for(var x=0;x<=W;x+=31){g.beginPath();g.moveTo(x,0);g.lineTo(x,H);g.stroke();}for(var y=0;y<=H;y+=31){g.beginPath();g.moveTo(0,y);g.lineTo(W,y);g.stroke();}
+  g.strokeStyle="#2459C7";g.lineWidth=10;g.strokeRect(50,50,W-100,H-100);g.lineWidth=2;g.strokeRect(74,74,W-148,H-148);
+  // 좌표축 장식
+  g.strokeStyle="#C2410C";g.lineWidth=4;g.beginPath();g.moveTo(150,H-150);g.lineTo(150,H-330);g.moveTo(150,H-150);g.lineTo(330,H-150);g.stroke();
+  g.fillStyle="#C2410C";g.beginPath();g.moveTo(150,H-345);g.lineTo(138,H-322);g.lineTo(162,H-322);g.fill();g.beginPath();g.moveTo(345,H-150);g.lineTo(322,H-138);g.lineTo(322,H-162);g.fill();
+  g.font="600 26px "+M;g.fillText("y",170,H-320);g.fillText("x",320,H-120);g.beginPath();g.arc(150,H-150,9,0,7);g.fill();
+  g.textAlign="center";g.fillStyle="#5A6B7A";g.font="700 30px "+F;g.fillText("고2 기하 · 교내 방탈출",W/2,190);
+  g.fillStyle="#16222E";g.font="800 96px "+F;g.fillText("좌표 탈출 성공 확인증",W/2,310);
+  g.fillStyle="#2459C7";g.font="800 64px "+F;g.fillText(teamLabel(),W/2,425);
+  var nm=names.filter(Boolean).join("   ·   ")||"(이름 미입력)";g.fillStyle="#16222E";g.font="700 46px "+F;
+  var maxW=W-360;while(g.measureText(nm).width>maxW&&parseInt(g.font.split(" ")[1])>26){g.font="700 "+(parseInt(g.font.split(" ")[1])-2)+"px "+F;}
+  g.fillText(nm,W/2,510);
+  g.fillStyle="#3A4A58";g.font="500 34px "+F;
+  g.fillText("위 학생들은 공간좌표, 벡터, 정사영, 이차곡선, 구의 방정식 문제 10개를 모두 해결하고",W/2,610);
+  g.fillText("정문 O(0, 0, 0)에서 출발해 후문 H(27, 0, 0)까지 무사히 탈출하였기에 이 확인증을 드립니다.",W/2,662);
+  var pen=(typeof penalty==="function")?penalty():0;
+  var rows=[["탈출 날짜",dateText(st.end)],["출발 → 탈출",clockText(st.start)+" → "+clockText(st.end)],["걸린 시간",durText(st.end-st.start)],["장소 카드",pen?"건너뜀 "+pen+"회 (감점 −"+pen+")":"모두 찾음 (감점 없음)"],["최종 벡터의 합","(27, 0, 0) = GH"],["자물쇠 번호","8 – 2 – 5 – 8"]];
+  var bx=400,by=720,bw=840,rh=58;g.fillStyle="#FFFFFF";g.strokeStyle="#CBD6DF";g.lineWidth=2;g.fillRect(bx,by,bw,rh*rows.length+20);g.strokeRect(bx,by,bw,rh*rows.length+20);
+  rows.forEach(function(r,i){var yy=by+20+rh*i+40;g.textAlign="left";g.fillStyle="#5A6B7A";g.font="700 30px "+F;g.fillText(r[0],bx+40,yy);g.fillStyle="#16222E";g.font="700 32px "+F;g.fillText(r[1],bx+300,yy);
+    if(i<rows.length-1){g.strokeStyle="#E3E9EE";g.beginPath();g.moveTo(bx+30,yy+18);g.lineTo(bx+bw-30,yy+18);g.stroke();}});
+  g.textAlign="right";g.fillStyle="#16222E";g.font="700 34px "+F;g.fillText(dateText(st.end),W-250,H-190);
+  g.font="700 38px "+F;g.fillText("고2 기하 담당 교사",W-250,H-130);
+  (function(){var cx=W-172,cy=H-158,R=58,red="#C8102E";g.save();g.translate(cx,cy);g.rotate(-0.12);g.globalAlpha=0.88;
+    g.strokeStyle=red;g.lineWidth=7;g.beginPath();g.arc(0,0,R,0,Math.PI*2);g.stroke();
+    g.lineWidth=2.5;g.beginPath();g.arc(0,0,R-11,0,Math.PI*2);g.stroke();
+    g.fillStyle=red;g.textAlign="center";g.textBaseline="middle";
+    g.font="900 30px "+F;g.fillText("찬경",0,-14);g.fillText("쌤",0,20);
+    g.restore();g.textBaseline="alphabetic";})();
+  return cv;
+}
+function jpegPdfBlob(dataURL,iw,ih){
+  var b64=dataURL.split(",")[1],bin=atob(b64),img=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)img[i]=bin.charCodeAt(i);
+  var enc=function(s){var u=new Uint8Array(s.length);for(var i=0;i<s.length;i++)u[i]=s.charCodeAt(i)&255;return u;};
+  var PW=841.89,PH=595.28,content="q "+PW+" 0 0 "+PH+" 0 0 cm /Im0 Do Q";
+  var parts=[],offs=[],len=0;function push(u){parts.push(u);len+=u.length;}
+  push(enc("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n"));
+  function obj(n,body){offs[n]=len;push(enc(n+" 0 obj\n"));if(typeof body==="string")push(enc(body));else body.forEach(push);push(enc("\nendobj\n"));}
+  obj(1,"<< /Type /Catalog /Pages 2 0 R >>");
+  obj(2,"<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+  obj(3,"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 "+PW+" "+PH+"] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>");
+  obj(4,[enc("<< /Type /XObject /Subtype /Image /Width "+iw+" /Height "+ih+" /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length "+img.length+" >>\nstream\n"),img,enc("\nendstream")]);
+  obj(5,"<< /Length "+content.length+" >>\nstream\n"+content+"\nendstream");
+  var xref=len,x="xref\n0 6\n0000000000 65535 f \n";for(var n=1;n<=5;n++)x+=String(offs[n]).padStart(10,"0")+" 00000 n \n";
+  push(enc(x+"trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n"+xref+"\n%%EOF"));
+  return new Blob(parts,{type:"application/pdf"});
+}
+function makeCert(){
+  var names=[];for(var i=0;i<6;i++){var v=document.getElementById("cn"+i).value.trim();names.push(v);}saveNames(names);
+  var msg=document.getElementById("certMsg");
+  if(!names.filter(Boolean).length){msg.textContent="조원 이름을 한 명 이상 입력하세요.";return;}
+  msg.textContent="확인증을 만드는 중…";
+  var fname="좌표탈출_성공확인증_"+teamLabel().replace(/\s/g,"")+".pdf";
+  (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){
+    var cv=drawCert(names);
+    var blob=null;try{blob=jpegPdfBlob(cv.toDataURL("image/jpeg",0.92),cv.width,cv.height);}catch(e){}
+    if(blob&&window.claude&&window.claude.use){
+      window.claude.use("downloads").then(function(dl){
+        if(!dl){msg.textContent="이 화면에서는 파일을 내려받을 수 없어요. 학생용 사이트에서 받아 주세요.";return;}
+        dl.save({filename:fname,data:blob}).then(function(r){msg.textContent=r&&r.status==="saved"?"확인증 PDF를 내려받았어요.":"확인증을 보냈어요.";},function(){msg.textContent="내려받기를 취소했어요.";});
+      });
+      return;
+    }
+    var a=document.createElement("a");
+    if(blob){a.href=URL.createObjectURL(blob);a.download=fname;}else{a.href=cv.toDataURL("image/png");a.download=fname.replace(".pdf",".png");}
+    document.body.appendChild(a);a.click();a.remove();
+    if(blob)setTimeout(function(){URL.revokeObjectURL(a.href);},60000);
+    msg.textContent=blob?"확인증 PDF를 내려받았어요. (다운로드 폴더나 파일 앱을 확인하세요)":"PDF를 만들지 못해 그림 파일(PNG)로 내려받았어요.";
+  });
+}
+function render(){
+  var box=document.getElementById("stages"); box.innerHTML="";
+  STAGES.forEach(function(S,si){
+    var sec=el("section",{class:"stage",style:"--sc:var("+S.color+")"});
+    sec.appendChild(el("div",{class:"stage-head"},'<span class="eyebrow">'+S.sub+'</span><h2>'+S.name+'</h2><span class="where">'+S.where+'</span>'));
+    Q.forEach(function(q,i){
+      if(q.stage!==si)return;
+      var n=String(i+1).padStart(2,"0");
+      var unlocked=i<=st.solved||st.teacher&&st.showAns;
+      var card;
+      if(i<st.solved){
+        card=el("div",{class:"q done"});
+        card.innerHTML='<div class="top"><span class="n">'+n+'</span><h3>'+q.title+'</h3></div><p>'+q.html+'</p><div class="ans">'+q.ans+'</div>'+(q.after?'<div class="goto">'+q.after+(q.digit?' · 자물쇠 숫자 <b>'+q.digit+'</b>':'')+'</div>':'')+'<div class="btns"><button type="button" class="ghost sm" data-act="pad">'+(pads[i]&&pads[i].open?'연습장 닫기':'연습장 열기')+'</button></div>'+padHTML(i);
+        wirePad(card,i);
+      }else if(i===st.solved && !st.end && pendingGate()<0){
+        card=el("div",{class:"q active"+(q.exit?" exit":""),style:q.exit?"border-color:var(--exit)":""});
+        card.innerHTML='<div class="top"><span class="n">'+n+'</span><h3>'+q.title+'</h3></div><p>'+q.html+'</p><div class="work"><div class="workL">'+fieldsHTML(q,i)+'</div>'+keypadHTML()+'</div>'+
+          '<div class="btns"><button type="button" data-act="check">확인</button><button type="button" class="ghost" data-act="hint">힌트 보기</button><button type="button" class="ghost" data-act="pad">'+(pads[i]&&pads[i].open?'연습장 닫기':'연습장 열기')+'</button></div><div class="msg" aria-live="polite"></div>'+padHTML(i)+
+          (st.showAns?'<div class="ans">교사용 정답: '+q.ans+'</div>':'');
+        card.querySelector('[data-act="check"]').onclick=function(){
+          var ok=q.check(readVals(q,i)); var m=card.querySelector(".msg");
+          if(ok){st.solved=i+1; if(st.solved===Q.length)st.end=Date.now(); save(); render(); drawMap();
+            var nx=document.querySelector(".q.arrive")||document.querySelector(".q.active")||document.getElementById("winBox"); if(nx)nx.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"center"});}
+          else{m.innerHTML='<div class="fb bad">아직 아니에요. 부호와 z좌표, 단위를 다시 확인해 보세요.</div>';}
+        };
+        card.querySelector('[data-act="hint"]').onclick=function(){
+          
+          card.querySelector(".msg").innerHTML='<div class="fb hint">힌트: '+q.hint+'</div>';
+        };
+        wireKeypad(card); wirePad(card,i);
+        card.addEventListener("keydown",function(e){if(e.key==="Enter"&&e.target.tagName==="INPUT")card.querySelector('[data-act="check"]').click();});
+      }else{
+        card=el("div",{class:"q locked"});
+        card.innerHTML='<div class="top"><span class="n">'+n+'</span><h3>잠긴 문제</h3></div><p>'+(i===st.solved?'장소 도착 확인을 하면 열려요.':'앞 문제를 맞히면 열려요.')+(st.showAns?' <span class="ans" style="display:inline-block">'+q.title+': '+q.ans+'</span>':'')+'</p>';
+      }
+      sec.appendChild(card);
+      if(i===pendingGate())sec.appendChild(arrivalCard(i));
+    });
+    box.appendChild(sec);
+  });
+  if(st.end){
+    var w=el("div",{class:"panel win",id:"winBox"});
+    w.innerHTML='<span class="eyebrow">ESCAPE</span><h2>탈출 성공!</h2><p>정문에서 출발해 학교를 한 바퀴 돌았지만, 이동 벡터의 합은 처음 구한 <span class="c">GH = (27, 0, 0)</span>과 같아요. 경로가 달라도 출발점과 도착점이 같으면 벡터의 합은 같습니다.</p><p>'+(penalty()?'장소 카드를 '+penalty()+'번 건너뛰어 <b>감점 −'+penalty()+'</b>이에요.':'장소 카드를 모두 찾아 <b>감점 없이</b> 탈출했어요!')+'</p><div class="btns"><button type="button" id="againBtn">처음부터 다시 풀기</button></div>';
+    w.insertAdjacentHTML("beforeend",certFormHTML());
+    box.appendChild(w);
+    document.getElementById("againBtn").onclick=function(){restart();};
+    document.getElementById("certBtn").onclick=makeCert;
+  }
+  var pc=document.getElementById("penChip"),pn=penalty();pc.hidden=!pn;pc.textContent="감점 −"+pn;
+  renderLog(); updStatus(); queueReport();
+}
+
+function renderLog(){
+  var moves=[],digits=[];
+  Q.forEach(function(q,i){
+    var got=i<st.solved;
+    if(q.move){(Array.isArray(q.move)?q.move:[q.move]).forEach(function(m){moves.push({m:m,got:got});});}
+    if(q.digit)digits.push({d:q.digit,got:got});
+  });
+  var circ=["①","②","③","④","⑤","⑥"];
+  document.getElementById("log").innerHTML=moves.map(function(o,k){
+    return '<div class="'+(o.got?"got":"")+'">'+circ[k]+' '+(o.got?o.m.name:"???")+'<b>'+(o.got?o.m.v:"( ?, ?, ? )")+'</b></div>';}).join("");
+  document.getElementById("lockrow").innerHTML=digits.map(function(o){return '<span class="'+(o.got?"got":"")+'">'+(o.got?o.d:"?")+'</span>';}).join("");
+}
+
+function fmt(s){var m=Math.floor(s/60),r=s%60;return String(m).padStart(2,"0")+":"+String(r).padStart(2,"0");}
+function updStatus(){
+  document.getElementById("progTxt").textContent=st.solved+" / "+Q.length;
+  document.getElementById("progBar").style.width=(st.solved/Q.length*100)+"%";
+}
+
+/* 지도 오버레이: 풀어 낸 장소만 표시 */
+function drawMap(){
+  var svg=document.getElementById("overlay"),h="";
+  if(document.getElementById("gridToggle").checked){
+    var g="",lab="",FX=-16,TX=50,FY=5,TY=-45,ink="#1B3A6B";
+    for(var x=FX;x<=TX;x++){var p=px(x,0)[0];if(p<0||p>1438)continue;var maj=x%5===0;
+      g+='<line x1="'+p+'" y1="0" x2="'+p+'" y2="1094" stroke="'+ink+'" stroke-opacity="'+(x===0?.85:maj?.45:.16)+'" stroke-width="'+(x===0?4:maj?2:1)+'"/>';
+      if(maj)lab+='<text x="'+p+'" y="34" text-anchor="middle" font-size="26" font-weight="600" fill="'+ink+'" stroke="#fff" stroke-width="7" paint-order="stroke" font-family="IBM Plex Mono,monospace">'+x+'</text>';}
+    for(var y=FY;y>=TY;y--){var q=px(0,y)[1];if(q<0||q>1094)continue;var maj=y%5===0;
+      g+='<line x1="0" y1="'+q+'" x2="1438" y2="'+q+'" stroke="'+ink+'" stroke-opacity="'+(y===0?.85:maj?.45:.16)+'" stroke-width="'+(y===0?4:maj?2:1)+'"/>';
+      if(maj&&y!==5)lab+='<text x="8" y="'+(q+9)+'" font-size="26" font-weight="600" fill="'+ink+'" stroke="#fff" stroke-width="7" paint-order="stroke" font-family="IBM Plex Mono,monospace">'+y+'</text>';}
+    var o=px(0,0);g+='<circle cx="'+o[0]+'" cy="'+o[1]+'" r="9" fill="'+ink+'"/><text x="'+(o[0]+12)+'" y="'+(o[1]+34)+'" font-size="26" font-weight="700" fill="'+ink+'" stroke="#fff" stroke-width="7" paint-order="stroke" font-family="IBM Plex Mono,monospace">O</text>';
+    lab+='<text x="1430" y="34" text-anchor="end" font-size="26" font-weight="700" fill="'+ink+'" stroke="#fff" stroke-width="7" paint-order="stroke" font-family="Gothic A1,sans-serif">x →</text><text x="8" y="1086" font-size="26" font-weight="700" fill="'+ink+'" stroke="#fff" stroke-width="7" paint-order="stroke" font-family="Gothic A1,sans-serif">y ↑  (1칸 = 4 m)</text>';
+    h+=g+lab;
+  }
+  var route=["G"];
+  Q.forEach(function(q,i){if(i<st.solved&&q.place){({E:["E"],N:["N"],F:["F"],XP:["X","P"],H:["H"]}[q.place]||[]).forEach(function(k){route.push(k);});}});
+  h+='<defs><marker id="vArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#C2410C"/></marker></defs>';
+  for(var ri=1;ri<route.length;ri++){var pa=px(PLACES[route[ri-1]][0],PLACES[route[ri-1]][1]),pb=px(PLACES[route[ri]][0],PLACES[route[ri]][1]);
+    var dx=pb[0]-pa[0],dy2=pb[1]-pa[1],L=Math.sqrt(dx*dx+dy2*dy2)||1,sh=Math.min(18,L/3);
+    h+='<line x1="'+pa[0]+'" y1="'+pa[1]+'" x2="'+(pb[0]-dx/L*sh)+'" y2="'+(pb[1]-dy2/L*sh)+'" stroke="#C2410C" stroke-width="6" stroke-linecap="round" marker-end="url(#vArrow)"/>';}
+  if(st.solved>=6&&st.solved<8){var c=px(32,-22);h+='<ellipse cx="'+c[0]+'" cy="'+c[1]+'" rx="'+6*O.u+'" ry="'+10*O.u+'" fill="none" stroke="#C2410C" stroke-width="4"/>';}
+  if(st.solved>=2&&st.solved<4){var a=px(3,-19),b=px(6,-16);h+='<line x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'" stroke="#7B3FB8" stroke-width="10" stroke-linecap="round" stroke-opacity=".8"/>';}
+  var marks=[["G","정문 G","#2459C7"]];
+  var map={E:[["E","E","#7B3FB8"]],M:[["M","M (z=2)","#7B3FB8"]],N:[["N","N","#1E7A3C"]],F:[["F","F","#C2410C"]],F12:[["F1","F₁","#C2410C"],["F2","F₂","#C2410C"]],XP:[["X","X","#A61E4D"],["P","P","#A61E4D"]],H:[["H","후문 H ★","#A61E4D"]]};
+  Q.forEach(function(q,i){if(i<st.solved&&q.place&&map[q.place]){if(q.place==="M"&&st.solved>=4)return;if(q.place==="F12"&&st.solved>=8)return;marks=marks.concat(map[q.place]);}});
+  marks.forEach(function(m){
+    if(m[0]==="N"&&st.solved>=4){}
+    var p=px(PLACES[m[0]][0],PLACES[m[0]][1]);
+    var dy=m[0]==="M"?-16:(m[0]==="N"?30:0);
+    h+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="13" fill="'+m[2]+'" stroke="#fff" stroke-width="4"/>';
+    h+='<text x="'+(p[0]+20)+'" y="'+(p[1]+9+dy)+'" font-size="30" font-weight="700" fill="#16222E" stroke="#fff" stroke-width="6" paint-order="stroke" font-family="Gothic A1,sans-serif">'+m[1]+'</text>';
+  });
+  svg.innerHTML=h;
+}
+document.getElementById("gridToggle").addEventListener("change",drawMap);
+
+/* 교사용 */
+document.getElementById("pinBtn").onclick=function(){
+  if(document.getElementById("pin").value===TEACHER_PIN){st.teacher=true;document.getElementById("tTools").hidden=false;}
+  else{document.getElementById("resetMsg").textContent="";document.getElementById("pin").value="";}
+};
+document.getElementById("showAns").onclick=function(){st.showAns=!st.showAns;this.textContent=st.showAns?"정답 숨기기":"정답 보기";render();};
+document.getElementById("skipBtn").onclick=function(){var pg=pendingGate();if(pg>=0){st.arrived[pg]=1;save();render();drawMap();return;}if(st.solved<Q.length){st.solved++;if(st.solved===Q.length)st.end=Date.now();save();render();drawMap();}};
+document.getElementById("codesBtn").onclick=function(){var b=document.getElementById("codeList");b.hidden=!b.hidden;
+  b.innerHTML='<table class="codes"><thead><tr><th>문제 후</th><th>카드를 둘 장소</th><th>카드 단어</th></tr></thead><tbody>'+Q.map(function(q,i){return q.gate?'<tr><td>'+(i+1)+'번</td><td>'+q.gate.place+'</td><td><b>'+q.gate.code+'</b></td></tr>':'';}).join("")+'</tbody></table>';};
+var resetArmed=false;
+document.getElementById("resetBtn").onclick=function(){
+  if(!resetArmed){resetArmed=true;this.textContent="한 번 더 누르면 초기화";document.getElementById("resetMsg").textContent="진행 기록과 시간이 모두 지워져요.";return;}
+  resetArmed=false;this.textContent="처음부터 다시";document.getElementById("resetMsg").textContent="초기화했어요.";
+  restart();
+};
+
+/* ---- 선생님 힌트 받기 ---- */
+var HINT_LS="coord-hints-seen";
+var hintSeen={}; try{hintSeen=JSON.parse(localStorage.getItem(HINT_LS)||"{}")||{};}catch(e){}
+var gotHints=[], hintQueue=[], hintShowing=null;
+function saveSeen(){try{localStorage.setItem(HINT_LS,JSON.stringify(hintSeen));}catch(e){}}
+var EPOCH_LS="coord-epoch";
+var myEpoch=""; try{myEpoch=localStorage.getItem(EPOCH_LS)||"";}catch(e){}
+function checkEpoch(ep){
+  if(!ep)return; ep=String(ep);
+  if(!myEpoch){myEpoch=ep;try{localStorage.setItem(EPOCH_LS,ep);}catch(e){}return;}
+  if(ep!==myEpoch){myEpoch=ep;try{localStorage.setItem(EPOCH_LS,ep);}catch(e){}remoteReset();}
+}
+function remoteReset(){
+  hintSeen={};saveSeen();gotHints=[];hintQueue=[];hintShowing=null;
+  document.getElementById("hintPop").hidden=true;document.getElementById("hintList").hidden=true;
+  team=null;try{localStorage.removeItem(TEAM_LS);}catch(e){}lastSent="";
+  restart();renderTeam();updHintBtn();
+  document.getElementById("resetPop").hidden=false;document.getElementById("rpOk").focus();
+}
+function pollHints(){
+  var url=(window.SCRIPT_URL||"").trim(); if(!url)return;
+  var q=team?"action=hints&team="+team:"action=epoch";
+  fetch(url+(url.indexOf("?")<0?"?":"&")+q+"&t="+Date.now()).then(function(r){return r.json();}).then(function(j){
+    if(!j||!j.ok)return;
+    var before=myEpoch; checkEpoch(j.epoch); if(before&&before!==myEpoch)return;
+    if(!team||!j.hints)return;
+    gotHints=j.hints||[]; updHintBtn();
+    gotHints.forEach(function(h){var key=team+":"+h.id;
+      if(h.acked.indexOf(team)<0&&!hintSeen[key]&&hintQueue.indexOf(h)<0&&(!hintShowing||hintShowing.id!==h.id))hintQueue.push(h);});
+    showNextHint();
+  }).catch(function(){});
+}
+function updHintBtn(){var b=document.getElementById("hintBtn");if(!b)return;b.hidden=!gotHints.length;b.textContent="받은 힌트 "+gotHints.length;}
+function showNextHint(){
+  if(hintShowing||!hintQueue.length)return;
+  hintShowing=hintQueue.shift();
+  document.getElementById("hpText").textContent=hintShowing.text;
+  document.getElementById("hpFrom").textContent=(hintShowing.team===0?"모든 조에게 · ":"")+"선생님 힌트 · "+hmS(hintShowing.t);
+  document.getElementById("hintPop").hidden=false;
+  try{if(navigator.vibrate)navigator.vibrate([120,80,120]);}catch(e){}
+  document.getElementById("hpOk").focus();
+}
+function hmS(ms){if(!ms)return "";var d=new Date(ms);return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
+function ackHint(){
+  var h=hintShowing; if(!h)return; hintShowing=null; document.getElementById("hintPop").hidden=true;
+  hintSeen[team+":"+h.id]=1; saveSeen();
+  pendingAcks.push({team:team,id:h.id}); flushAcks();
+  setTimeout(showNextHint,300);
+}
+function openHintList(){
+  var l=document.getElementById("hlList");
+  l.innerHTML=gotHints.slice().reverse().map(function(h){return '<li><span class="tm">'+hmS(h.t)+'</span><span></span></li>';}).join("");
+  [].forEach.call(l.querySelectorAll("li"),function(li,i){li.children[1].textContent=gotHints[gotHints.length-1-i].text;});
+  document.getElementById("hintList").hidden=false;
+}
+document.getElementById("hpOk").onclick=ackHint;
+document.getElementById("rpOk").onclick=function(){document.getElementById("resetPop").hidden=true;window.scrollTo({top:0});};
+document.getElementById("hintBtn").onclick=openHintList;
+document.getElementById("hlClose").onclick=function(){document.getElementById("hintList").hidden=true;};
+setInterval(pollHints,8000);
+render(); renderTeam(); drawMap(); pollHints();
+})();
+</script>
+
+</body>
+</html>
