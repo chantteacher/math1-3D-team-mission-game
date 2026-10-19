@@ -856,10 +856,9 @@ function render(){
   });
   if(st.end){
     var w=el("div",{class:"panel win",id:"winBox"});
-    w.innerHTML='<span class="eyebrow">ESCAPE</span><h2>탈출 성공!</h2><p>정문에서 출발해 학교를 한 바퀴 돌았지만, 이동 벡터의 합은 처음 구한 <span class="c">GH = (27, 0, 0)</span>과 같아요. 경로가 달라도 출발점과 도착점이 같으면 벡터의 합은 같습니다.</p><p>'+(penalty()?'장소 카드를 '+penalty()+'번 건너뛰어 <b>감점 −'+penalty()+'</b>이에요.':'장소 카드를 모두 찾아 <b>감점 없이</b> 탈출했어요!')+'</p><div class="btns"><button type="button" id="againBtn">처음부터 다시 풀기</button></div>';
+    w.innerHTML='<span class="eyebrow">ESCAPE</span><h2>탈출 성공!</h2><p>정문에서 출발해 학교를 한 바퀴 돌았지만, 이동 벡터의 합은 처음 구한 <span class="c">GH = (27, 0, 0)</span>과 같아요. 경로가 달라도 출발점과 도착점이 같으면 벡터의 합은 같습니다.</p><p>'+(penalty()?'장소 카드를 '+penalty()+'번 건너뛰어 <b>감점 −'+penalty()+'</b>이에요.':'장소 카드를 모두 찾아 <b>감점 없이</b> 탈출했어요!')+'</p>';
     w.insertAdjacentHTML("beforeend",certFormHTML());
     box.appendChild(w);
-    document.getElementById("againBtn").onclick=function(){restart();};
     document.getElementById("certBtn").onclick=makeCert;
   }
   var pc=document.getElementById("penChip"),pn=penalty();pc.hidden=!pn;pc.textContent="감점 −"+pn;
