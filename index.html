@@ -374,13 +374,13 @@ var Q=[
   ans:"GH = (27, 0, 0), 27칸 × 4 m = 108 m",
   after:"이 벡터를 기록지에 크게 적어 두세요. 마지막 문제에서 다시 써요."},
  {stage:0,exit:true,title:"출구: 기울어진 본관",
-  html:'지도에서 본관의 긴 벽은 북서–남동 방향으로 비스듬히 놓여 있다. 이 벽을 따라 <b>남동쪽</b>을 가리키는 벡터는 <span class="c">v = (1, −1, 0)</span>이다.<br>① 벡터 v의 크기 <span class="c">|v|</span>를 구하라.<br>② v와 방향이 같은 단위벡터 <span class="c">u</span>를 구하라. (u = v ÷ |v|)<br>③ 정문 G(0, 0, 0)에서 <span class="c">u</span> 방향으로 <b>8√2칸(약 45 m)</b> 이동한 점 E의 좌표를 구하라. (E = G + 8√2·u, 지면 위 이동)',
+  html:'지도에서 본관의 긴 벽은 북서–남동 방향으로 비스듬히 놓여 있다. 이 벽을 따라 <b>남동쪽</b>을 가리키는 벡터는 <span class="c">v = (1, −1, 0)</span>이다.<br>① 벡터 v의 크기 <span class="c">|v|</span>를 구하라.<br>② v와 방향이 같은 단위벡터 <span class="c">u</span>를 구하라. (u = v ÷ |v|)<br>③ 정문 G(0, 0, 0)에서 <span class="c">u</span> 방향으로 <b>7√2칸(약 40 m)</b> 이동한 뒤, <b>정남쪽으로 7칸(28 m)</b> 더 이동한 점 E의 좌표를 구하라. (E = G + 7√2·u + (0, −7, 0), 지면 위 이동)',
   fields:[{t:"num",k:"m",label:"① |v|"},{t:"vec",k:"u",label:"② u = ("},{t:"vec",k:"e",label:"③ E = ("}],
-  check:function(v){return near(num(v.m),Math.SQRT2,0.01)&&vec(v,"u",[1/Math.SQRT2,-1/Math.SQRT2,0],0.01)&&vec(v,"e",[8,-8,0]);},
-  hint:"① |v| = √(1² + (−1)² + 0²). ② 각 성분을 |v|로 나누면 돼요 (1/√2처럼 입력). ③ 8√2 × u = (8, −8, 0)을 정문 (0, 0, 0)에 더하세요.",
-  ans:"|v| = √2, u = (1/√2, −1/√2, 0), 8√2·u = (8, −8, 0) → E(8, −8, 0)",
-  after:"다음 장소: E(8, −8, 0) 본관 북쪽 현관으로 가세요.",
-  gate:{place:"본관 북쪽 현관 E(8, −8, 0)",code:"해바라기",key:"E"}, digit:8, move:{name:"G → E",v:"(8, −8, 0)"}, place:"E"},
+  check:function(v){return near(num(v.m),Math.SQRT2,0.01)&&vec(v,"u",[1/Math.SQRT2,-1/Math.SQRT2,0],0.01)&&vec(v,"e",[7,-14,0]);},
+  hint:"① |v| = √(1² + (−1)² + 0²). ② 각 성분을 |v|로 나누면 돼요 (1/√2처럼 입력). ③ 7√2 × u = (7, −7, 0)이에요. 여기에 남쪽으로 7칸 (0, −7, 0)을 더하세요.",
+  ans:"|v| = √2, u = (1/√2, −1/√2, 0), 7√2·u = (7, −7, 0), E = (7, −7, 0) + (0, −7, 0) = (7, −14, 0)",
+  after:"다음 장소: E(7, −14, 0) 본관 북쪽 현관으로 가세요.",
+  gate:{place:"본관 북쪽 현관 E(7, −14, 0)",code:"해바라기",key:"E"}, digit:8, move:{name:"G → E",v:"(7, −14, 0)"}, place:"E"},
  {stage:1,title:"구름다리 길이와 내분점",
   html:'3층 구름다리의 양 끝은 <span class="c">A(3, −19, 2)</span>, <span class="c">B(6, −16, 2)</span>이다. 길이 AB를 칸 단위로 구하고(소수 둘째 자리 또는 √ 사용), AB를 2:1로 내분하는 점 M의 좌표를 구하라. 실제로 걸음 수로 길이를 재 보고, 구한 점 M으로 가라.',
   fields:[{t:"num",k:"l",label:"AB (칸)"},{t:"vec",k:"m",label:"M = ("}],
@@ -395,7 +395,7 @@ var Q=[
   hint:"평행하지도 않고 만나지도 않는 두 직선은 꼬인 위치예요. 거리는 z좌표의 차 2 − 0이에요. 바로 아래로 내려가면 x, y좌표는 그대로이고 z만 0이 돼요.",
   ans:"꼬인 위치, 거리 2칸(8 m), N(5, −17, 0) — 선분 MN은 두 직선에 동시에 수직(공통수선)이고, N은 1층 복도 직선 위의 점(t = 0)이에요.",
   after:"다음 장소: N(5, −17, 0) 구름다리 바로 아래 1층 통로(중정 입구)로 가세요.",
-  gate:{place:"구름다리 아래 1층 통로 N(5, −17, 0)",code:"종이배",key:"N"}, digit:2, move:{name:"E → N",v:"(−3, −9, 0)"}, place:"N"},
+  gate:{place:"구름다리 아래 1층 통로 N(5, −17, 0)",code:"종이배",key:"N"}, digit:2, move:{name:"E → N",v:"(−2, −3, 0)"}, place:"N"},
  {stage:2,title:"구름다리에서 내린 줄의 그림자",
   html:'3번에서 구한 구름다리 위의 점 <span class="c">M(5, −17, 2)</span>에서 중정 잔디밭의 북서쪽 모서리 <span class="c">C(7, −19, 0)</span>까지 줄을 팽팽하게 당겼다. 해가 바로 위에 있다고 할 때, 줄 MC가 중정 바닥(z = 0)에 만드는 그림자(정사영)의 길이를 구하라. 또 줄과 바닥이 이루는 각을 θ라 할 때 cos θ의 값은?',
   fields:[{t:"num",k:"p",label:"정사영 길이 (칸)"},{t:"num",k:"c",label:"cos θ"}],
@@ -442,7 +442,7 @@ var Q=[
   after:""}
 ];
 
-var PLACES={G:[0,0],E:[8,-8],M:[5,-17],N:[5,-17],F:[32,-22],F1:[32,-14],F2:[32,-30],X:[32,-16],P:[32,-4],H:[27,0]};
+var PLACES={G:[0,0],E:[7,-14],M:[5,-17],N:[5,-17],F:[32,-22],F1:[32,-14],F2:[32,-30],X:[32,-16],P:[32,-4],H:[27,0]};
 var LS="coord-escape-v2";
 var st={solved:0,start:Date.now(),hints:0,hintSeen:{},teacher:false,showAns:false,end:null,arrived:{},skipped:{}};
 try{var saved=JSON.parse(localStorage.getItem(LS)||"null");if(saved&&typeof saved.solved==="number"){st=Object.assign(st,saved);st.teacher=false;st.showAns=false;}}catch(e){}
