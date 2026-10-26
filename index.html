@@ -89,6 +89,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 .ans{background:var(--ok-soft);border-radius:6px;padding:8px 10px;font-size:14px}
 .win{border:2px solid var(--s5);text-align:left;display:flex;flex-direction:column;gap:8px}
 .win h2{font-size:26px;color:var(--s5)}
+.aha{margin:10px 0 6px;padding:16px 18px;border-radius:14px;background:#FFF6E0;border:2px solid #E9B949;text-align:center}.aha .eq{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:18px;font-weight:600;color:var(--ink)}.aha .big{font-size:30px;font-weight:800;color:#A61E4D;margin:6px 0 8px}.aha p{margin:0;font-size:15px;line-height:1.7}
 .work{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:start}
 .workL{display:flex;flex-direction:column;gap:10px;min-width:0}
 .preview{font:500 14px var(--mono);color:var(--muted);background:var(--paper);border:1px dashed var(--line);border-radius:8px;padding:7px 10px;overflow-wrap:anywhere}
@@ -221,6 +222,8 @@ details.teacher .tbody{display:flex;flex-direction:column;gap:10px;padding-top:1
 .q.active{animation:pop .35s ease-out}
 @media (prefers-reduced-motion:reduce){.q.active{animation:none}.status .bar i{transition:none}}
 @media (max-width:480px){.f input{width:84px}.f .tuple input{width:58px}}
+.vec{position:relative;display:inline-block;padding:.3em 1px 0;line-height:1}.vec::before{content:"";position:absolute;left:0;right:2px;top:.1em;border-top:1.5px solid currentColor}.vec::after{content:"";position:absolute;right:-1px;top:calc(.1em - 2.6px);border-left:5px solid currentColor;border-top:3px solid transparent;border-bottom:3px solid transparent}
+.ghdraw{animation:ghd 1.6s .2s ease-out forwards}@keyframes ghd{to{stroke-dashoffset:0}}.ghlabel{opacity:0;animation:ghf .6s 1.5s ease-out forwards}.vnum{opacity:0;animation:ghf .5s ease-out forwards}@keyframes ghf{to{opacity:1}}@media (prefers-reduced-motion:reduce){.ghdraw{animation:none;stroke-dashoffset:0!important}.ghlabel,.vnum{animation:none;opacity:1}}
 </style>
 <style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}</style>
 <script src="config.js"></script>
@@ -256,12 +259,12 @@ details.teacher .tbody{display:flex;flex-direction:column;gap:10px;padding-top:1
 </aside>
 <main class="main">
 <header>
-  <span class="eyebrow">고2 기하 · 교내 방탈출 · 10문제</span>
+  <span class="eyebrow">고2 기하 · 교내 방탈출 · 8문제</span>
   <h1>좌표 탈출: 정문에서 후문까지</h1>
   <p class="muted">답을 맞혀야 다음 문제가 열려요. 출구 문제(주황 테두리)를 풀면 다음 장소의 좌표가 나오고, 그곳에 다음 봉투가 있어요.</p>
 </header>
 <div class="status" aria-live="polite">
-  <span>진행 <b id="progTxt">0 / 10</b></span>
+  <span>진행 <b id="progTxt">0 / 8</b></span>
   <span class="teamchip" id="teamChip">조 선택 전</span>
   <span class="bar"><i id="progBar"></i></span>
   <span class="penchip" id="penChip" hidden></span>
@@ -331,11 +334,11 @@ var O={x:350,y:125,u:21.4};
 function px(x,y){return [O.x+O.u*x, O.y-O.u*y];}
 
 var STAGES=[
- {name:"정문",sub:"STAGE 1 · 벡터의 크기 · 단위벡터",color:"--s1",where:"시작 장소: 정문 G(0, 0, 0)"},
- {name:"본관과 구름다리",sub:"STAGE 2 · 공간좌표",color:"--s2",where:"시작 장소: 본관 북쪽 현관"},
- {name:"중정",sub:"STAGE 3 · 정사영 · 두 점 사이 거리",color:"--s3",where:"시작 장소: 구름다리 아래 1층 통로"},
- {name:"운동장",sub:"STAGE 4 · 이차곡선",color:"--s4",where:"시작 장소: 운동장 중심 · 편의상 X = x − 32, Y = y + 22"},
- {name:"주차장과 후문",sub:"STAGE 5 · 구 · 벡터의 합",color:"--s5",where:"시작 장소: 주차장 P(32, −4, 0)"}
+ {name:"정문",sub:"STAGE 1 · 공간벡터의 성분 · 크기 · 단위벡터",color:"--s1",where:"시작 장소: 정문 G(0, 0, 0)"},
+ {name:"본관과 구름다리",sub:"STAGE 2 · 공간좌표 · 내분점",color:"--s2",where:"시작 장소: 본관 북쪽 현관 E"},
+ {name:"중정",sub:"STAGE 3 · 정사영 · 공간벡터의 성분",color:"--s3",where:"시작 장소: 구름다리 위 M (z = 2)"},
+ {name:"운동장",sub:"STAGE 4 · 이차곡선 · 벡터의 실수배",color:"--s4",where:"시작 장소: 운동장 중심 · 편의상 X = x − 32, Y = y + 22"},
+ {name:"주차장과 후문",sub:"STAGE 5 · 벡터의 합 · 구의 방정식",color:"--s5",where:"시작 장소: 주차장 P(32, −4, 0)"}
 ];
 
 /* 수식 해석: 12, −3, 4.24, 3/2, 4√2, √(36−23.04), 6cos30, 3², 2^3, π (삼각함수는 도 단위) */
@@ -367,82 +370,68 @@ function vec(v,k,target,t){return near(num(v[k+"x"]),target[0],t)&&near(num(v[k+
 
 var Q=[
  {stage:0,title:"정문에서 후문으로",
-  html:'그림의 축척(약 20 m)으로 정문 G에서 후문 H까지의 벡터 <span class="c">GH</span>를 성분으로 나타내고, 실제 거리를 m로 구하라.',
-  fields:[{t:"vec",k:"v",label:"GH = ("},{t:"num",k:"d",label:"거리 (m)"}],
+  html:'그림의 축척(약 20 m)으로 정문 G에서 후문 H까지의 벡터 <span class="c"><span class=vec>GH</span></span>를 성분으로 나타내고, 실제 거리를 m로 구하라.',
+  fields:[{t:"vec",k:"v",label:"<span class=vec>GH</span> = ("},{t:"num",k:"d",label:"거리 (m)"}],
   check:function(v){return vec(v,"v",[27,0,0])&&near(num(v.d),108,2);},
-  hint:"축척 막대 20 m가 5칸이에요. 지도의 모눈에서 정문(O)부터 후문까지 칸 수를 세어 보세요. 정문과 후문은 같은 도로변이라 y, z 성분은 0이에요.",
-  ans:"GH = (27, 0, 0), 27칸 × 4 m = 108 m",
+  hint:"축척 막대 20 m가 5칸이에요. 지도의 모눈에서 정문(O)부터 후문까지 칸 수를 세어 보세요. 정문과 후문은 같은 도로변이고 둘 다 지면이라 y, z 성분은 0이에요.",
+  ans:"<span class=vec>GH</span> = (27, 0, 0), |<span class=vec>GH</span>| = 27칸 × 4 m = 108 m",
   after:"이 벡터를 기록지에 크게 적어 두세요. 마지막 문제에서 다시 써요."},
  {stage:0,exit:true,title:"출구: 기울어진 본관",
-  html:'지도에서 본관의 긴 벽은 북서–남동 방향으로 비스듬히 놓여 있다. 이 벽을 따라 <b>남동쪽</b>을 가리키는 벡터는 <span class="c">v = (1, −1, 0)</span>이다.<br>① 벡터 v의 크기 <span class="c">|v|</span>를 구하라.<br>② v와 방향이 같은 단위벡터 <span class="c">u</span>를 구하라. (u = v ÷ |v|)<br>③ 정문 G(0, 0, 0)에서 <span class="c">u</span> 방향으로 <b>7√2칸(약 40 m)</b> 이동한 뒤, <b>정남쪽으로 7칸(28 m)</b> 더 이동한 점 E의 좌표를 구하라. (E = G + 7√2·u + (0, −7, 0), 지면 위 이동)',
-  fields:[{t:"num",k:"m",label:"① |v|"},{t:"vec",k:"u",label:"② u = ("},{t:"vec",k:"e",label:"③ E = ("}],
+  html:'지도에서 본관의 긴 벽은 북서–남동 방향으로 비스듬히 놓여 있다. 이 벽을 따라 <b>남동쪽</b>을 가리키는 벡터는 <span class="c"><span class=vec>v</span> = (1, −1, 0)</span>이다.<br>① 벡터 <span class=vec>v</span>의 크기 <span class="c">|<span class=vec>v</span>|</span>를 구하라.<br>② <span class=vec>v</span>와 방향이 같은 단위벡터 <span class="c"><span class=vec>u</span></span>를 구하라. (<span class=vec>u</span> = <span class=vec>v</span> ÷ |<span class=vec>v</span>|)<br>③ 정문 G(0, 0, 0)에서 <span class="c"><span class=vec>u</span></span> 방향으로 <b>7√2칸(약 40 m)</b> 이동한 뒤, <b>정남쪽으로 7칸(28 m)</b> 더 이동한 점 E의 좌표를 구하라. (E = 7√2·<span class=vec>u</span> + (0, −7, 0), 지면 위 이동)',
+  fields:[{t:"num",k:"m",label:"① |<span class=vec>v</span>|"},{t:"vec",k:"u",label:"② <span class=vec>u</span> = ("},{t:"vec",k:"e",label:"③ E = ("}],
   check:function(v){return near(num(v.m),Math.SQRT2,0.01)&&vec(v,"u",[1/Math.SQRT2,-1/Math.SQRT2,0],0.01)&&vec(v,"e",[7,-14,0]);},
-  hint:"① |v| = √(1² + (−1)² + 0²). ② 각 성분을 |v|로 나누면 돼요 (1/√2처럼 입력). ③ 7√2 × u = (7, −7, 0)이에요. 여기에 남쪽으로 7칸 (0, −7, 0)을 더하세요.",
-  ans:"|v| = √2, u = (1/√2, −1/√2, 0), 7√2·u = (7, −7, 0), E = (7, −7, 0) + (0, −7, 0) = (7, −14, 0)",
+  hint:"① |<span class=vec>v</span>| = √(1² + (−1)² + 0²). ② 각 성분을 |<span class=vec>v</span>|로 나누면 돼요 (1/√2처럼 입력). ③ 7√2 × <span class=vec>u</span> = (7, −7, 0)이에요. 여기에 남쪽으로 7칸 (0, −7, 0)을 성분끼리 더하세요.",
+  ans:"|<span class=vec>v</span>| = √2, <span class=vec>u</span> = (1/√2, −1/√2, 0), 7√2·<span class=vec>u</span> = (7, −7, 0), E = (7, −7, 0) + (0, −7, 0) = (7, −14, 0)",
   after:"다음 장소: E(7, −14, 0) 본관 북쪽 현관으로 가세요.",
   gate:{place:"본관 북쪽 현관 E(7, −14, 0)",code:"해바라기",key:"E"}, digit:8, move:{name:"G → E",v:"(7, −14, 0)"}, place:"E"},
- {stage:1,title:"구름다리 길이와 내분점",
-  html:'3층 구름다리의 양 끝은 <span class="c">A(3, −19, 2)</span>, <span class="c">B(6, −16, 2)</span>이다. 길이 AB를 칸 단위로 구하고(소수 둘째 자리 또는 √ 사용), AB를 2:1로 내분하는 점 M의 좌표를 구하라. 실제로 걸음 수로 길이를 재 보고, 구한 점 M으로 가라.',
-  fields:[{t:"num",k:"l",label:"AB (칸)"},{t:"vec",k:"m",label:"M = ("}],
-  check:function(v){return near(num(v.l),Math.sqrt(18),0.02)&&vec(v,"m",[5,-17,2]);},
-  hint:"AB = √(3² + 3² + 0²). 2:1 내분점은 (A + 2B) / 3이에요.",
-  ans:"AB = 3√2 ≈ 4.24칸 ≈ 17 m, M(5, −17, 2)",
-  gate:{place:"구름다리 위 2:1 내분점 M(5, −17, 2)",code:"구름빵",key:"M"}, after:"다음 장소: 구름다리 위 M(5, −17, 2)으로 가세요.", place:"M"},
- {stage:1,exit:true,title:"출구: 구름다리와 1층 복도",
-  html:'3층 구름다리는 직선 <span class="c">(3, −19, 2) + s(1, 1, 0)</span> 위에, 그 아래 1층 복도는 직선 <span class="c">(5, −17, 0) + t(1, −1, 0)</span> 위에 있다. 위에서 내려다보면 두 직선은 X자로 엇갈리지만, 높이가 달라 실제로는 만나지 않는다.<br>① 두 직선의 위치 관계를 골라라.<br>② 두 직선 사이의 거리(칸)를 구하라.<br>③ 3번에서 구한 구름다리 위의 점 <span class="c">M(5, −17, 2)</span>에서 <b>바로 아래로 내려가</b> 1층 바닥(z = 0)에 닿은 점 N의 좌표를 구하라.',
-  fields:[{t:"sel",k:"r",label:"① 위치 관계",opts:["선택","평행","한 점에서 만남","꼬인 위치"]},{t:"num",k:"d",label:"② 거리 (칸)"},{t:"vec",k:"n",label:"③ N = ("}],
-  check:function(v){return v.r==="꼬인 위치"&&near(num(v.d),2,0.01)&&vec(v,"n",[5,-17,0]);},
-  hint:"평행하지도 않고 만나지도 않는 두 직선은 꼬인 위치예요. 거리는 z좌표의 차 2 − 0이에요. 바로 아래로 내려가면 x, y좌표는 그대로이고 z만 0이 돼요.",
-  ans:"꼬인 위치, 거리 2칸(8 m), N(5, −17, 0) — 선분 MN은 두 직선에 동시에 수직(공통수선)이고, N은 1층 복도 직선 위의 점(t = 0)이에요.",
-  after:"다음 장소: N(5, −17, 0) 구름다리 바로 아래 1층 통로(중정 입구)로 가세요.",
-  gate:{place:"구름다리 아래 1층 통로 N(5, −17, 0)",code:"종이배",key:"N"}, digit:2, move:{name:"E → N",v:"(−2, −3, 0)"}, place:"N"},
- {stage:2,title:"구름다리에서 내린 줄의 그림자",
-  html:'3번에서 구한 구름다리 위의 점 <span class="c">M(5, −17, 2)</span>에서 중정 잔디밭의 북서쪽 모서리 <span class="c">C(7, −19, 0)</span>까지 줄을 팽팽하게 당겼다. 해가 바로 위에 있다고 할 때, 줄 MC가 중정 바닥(z = 0)에 만드는 그림자(정사영)의 길이를 구하라. 또 줄과 바닥이 이루는 각을 θ라 할 때 cos θ의 값은?',
-  fields:[{t:"num",k:"p",label:"정사영 길이 (칸)"},{t:"num",k:"c",label:"cos θ"}],
-  check:function(v){return near(num(v.p),2*Math.sqrt(2),0.01)&&near(num(v.c),Math.sqrt(6)/3,0.005);},
-  hint:"M을 바닥에 정사영한 점은 M′(5, −17, 0)이에요. 그림자 길이는 M′C, 줄의 길이는 MC이고, (정사영 길이) = (줄의 길이) × cos θ 예요.",
-  ans:"정사영 M′C = √(4 + 4) = 2√2 ≈ 2.83칸, 줄 MC = √(4 + 4 + 4) = 2√3, cos θ = 2√2 / 2√3 = √6/3 ≈ 0.816",
-  after:"정사영의 길이는 원래 길이에 cos θ를 곱한 것과 같아요."},
- {stage:2,exit:true,title:"출구: 잔디밭 한가운데",
-  html:'중정 입구 <span class="c">N(5, −17, 0)</span>에서 중정 잔디밭 한가운데 점 <span class="c">D(8, −21, 0)</span>까지의 거리 d(칸)를 구하라. 다음 장소는 <span class="c">N + (d + 22, −d, 0)</span>이다.',
-  fields:[{t:"num",k:"d",label:"d (칸)"},{t:"vec",k:"p",label:"다음 장소 = ("}],
-  check:function(v){return near(num(v.d),5,0.01)&&vec(v,"p",[32,-22,0]);},
-  hint:"두 점 사이의 거리는 √((x차)² + (y차)² + (z차)²) 예요. x는 3, y는 4만큼 차이 나고 z는 같아요.",
-  ans:"d = √(9 + 16 + 0) = 5 (20 m), 다음 장소 (5 + 27, −17 − 5, 1) = (32, −22, 0)",
+ {stage:1,exit:true,title:"출구: 구름다리의 내분점",
+  html:'3층 구름다리(z = 2)의 양 끝은 <span class="c">A(3, −19, 2)</span>, <span class="c">B(6, −16, 2)</span>이다.<br>① 벡터 <span class="c"><span class=vec>AB</span></span>를 성분으로 나타내라.<br>② 구름다리의 길이 <span class="c">|<span class=vec>AB</span>|</span>를 칸 단위로 구하라. (√ 사용 가능)<br>③ 구름다리 AB를 2 : 1로 내분하는 점 M의 좌표를 구하라. 실제로 걸음 수로 길이를 재 보고, 구한 점 M으로 가라.',
+  fields:[{t:"vec",k:"ab",label:"① <span class=vec>AB</span> = ("},{t:"num",k:"l",label:"② |<span class=vec>AB</span>| (칸)"},{t:"vec",k:"m",label:"③ M = ("}],
+  check:function(v){return vec(v,"ab",[3,3,0])&&near(num(v.l),Math.sqrt(18),0.02)&&vec(v,"m",[5,-17,2]);},
+  hint:"① <span class=vec>AB</span> = (B의 좌표) − (A의 좌표)를 성분끼리 빼요. ② |<span class=vec>AB</span>| = √(3² + 3² + 0²). ③ 2 : 1 내분점의 좌표는 ((1·3 + 2·6)/3, (1·(−19) + 2·(−16))/3, (1·2 + 2·2)/3)이에요. A에서 <span class=vec>AB</span>의 2/3만큼 간 점(M = A + (2/3)·<span class=vec>AB</span>)으로 생각해도 돼요.",
+  ans:"<span class=vec>AB</span> = (3, 3, 0), |<span class=vec>AB</span>| = 3√2 ≈ 4.24칸 ≈ 17 m, M = (3, −19, 2) + (2, 2, 0) = (5, −17, 2)",
+  after:"다음 장소: 구름다리 위 M(5, −17, 2)으로 가세요.",
+  gate:{place:"구름다리 위 2:1 내분점 M(5, −17, 2)",code:"구름빵",key:"M"}, digit:2, move:{name:"E → M",v:"(−2, −3, 2)"}, place:"M"},
+ {stage:2,exit:true,title:"출구: 줄의 그림자와 잔디밭",
+  html:'구름다리 위의 점 <span class="c">M(5, −17, 2)</span>에서 중정 잔디밭 한가운데 점 <span class="c">D(8, −21, 0)</span>까지 줄을 팽팽하게 당겼다.<br>① 벡터 <span class="c"><span class=vec>MD</span></span>를 성분으로 나타내라.<br>② 해가 바로 위에 있을 때, 줄 MD가 바닥(z = 0)에 만드는 그림자(정사영)의 길이를 구하라. 이 값을 d라 하자.<br>③ 다음 장소 F는 M에서 벡터 <span class="c">(d + 22, −d, −2)</span>만큼 이동한 곳이다. F의 좌표를 구하라.',
+  fields:[{t:"vec",k:"md",label:"① <span class=vec>MD</span> = ("},{t:"num",k:"d",label:"② d (칸)"},{t:"vec",k:"p",label:"③ F = ("}],
+  check:function(v){return vec(v,"md",[3,-4,-2])&&near(num(v.d),5,0.01)&&vec(v,"p",[32,-22,0]);},
+  hint:"① <span class=vec>MD</span> = (8 − 5, −21 − (−17), 0 − 2). ② M을 바닥에 정사영한 점은 M′(5, −17, 0)이에요. 그림자는 선분 M′D이니 그 길이는 √(3² + (−4)²)예요. ③ M의 좌표에 (d + 22, −d, −2)를 성분끼리 더하세요.",
+  ans:"<span class=vec>MD</span> = (3, −4, −2), 줄의 길이 √29, 그림자 M′D = √(9 + 16) = 5 → d = 5 (20 m), F = (5 + 27, −17 − 5, 2 − 2) = (32, −22, 0)",
   after:"다음 장소: F(32, −22, 0) 운동장 중심으로 가세요.",
-  digit:5, move:{name:"N → F",v:"(27, −5, 0)"}, place:"F"},
+  digit:5, move:{name:"M → F",v:"(27, −5, −2)"}, place:"F"},
  {stage:3,title:"타원 트랙",
   html:'운동장 중심 F를 원점으로 하는 평면좌표 <span class="c">X = x − 32</span>, <span class="c">Y = y + 22</span>를 잡자. 이 좌표에서 남북(Y축) 길이 20칸, 동서(X축) 길이 12칸인 타원 트랙의 방정식은 <span class="c">X²/6² + Y²/10² = 1</span>이다.<br>① 이 타원의 초점 중 하나가 <span class="c">(0, c)</span> <span class="c">(c &gt; 0)</span>일 때, c의 값을 구하라.<br>② 북쪽 초점 F₁에 공이 하나 놓여 있다. 공은 지면 위에 있다고 할 때, 이 공의 실제 좌표 <span class="c">(x, y, z)</span>를 구하라.',
   fields:[{t:"num",k:"c",label:"c (초점 (0, c), c > 0)"},{t:"vec",k:"f",label:"공의 좌표 = ("}],
   check:function(v){return near(num(v.c),8,0.01)&&vec(v,"f",[32,-14,0]);},
   hint:"장축이 Y축(남북) 방향이라 초점이 Y축 위에 있어요. c² = 10² − 6². 공의 실제 좌표는 x = X + 32, y = Y − 22이고, 공이 지면 위에 있으니 z = 0이에요.",
   ans:"X²/36 + Y²/100 = 1, c = 8, 공(북쪽 초점 F₁)의 좌표 (32, −14, 0). 남쪽 초점 F₂는 (32, −30, 0)",
-  after:"두 초점의 위치는 8번에서 다시 써요.", place:"F12"},
+  after:"두 초점의 위치는 6번에서 다시 써요.", place:"F12"},
  {stage:3,exit:true,title:"출구: 호루라기 쌍곡선",
-  html:'<b>7번에서 구한 타원 트랙의 두 초점</b> <span class="c">F₁(32, −14, 0)</span>, <span class="c">F₂(32, −30, 0)</span>에서 동시에 호루라기를 분다. 두 초점까지의 거리의 차가 <b>12칸</b>으로 일정한 점들은 쌍곡선을 이룬다. 7번과 같은 XY 좌표(운동장 중심이 원점)에서 이 쌍곡선의 방정식을 <span class="c">X²/a² − Y²/b² = −1</span>이라 하자.<br>① a²의 값을 구하라.<br>② 이 쌍곡선의 두 꼭짓점 중 <b>북쪽 꼭짓점</b> X의 실제 좌표 <span class="c">(x, y, z)</span>를 구하라. (지면 위의 점)',
-  fields:[{t:"num",k:"a",label:"① a²"},{t:"vec",k:"x",label:"② X = ("}],
-  check:function(v){return near(num(v.a),28,0.01)&&vec(v,"x",[32,-16,0]);},
-  hint:"초점이 Y축 위에 있는 쌍곡선 X²/a² − Y²/b² = −1에서 거리의 차는 2b예요. 그래서 b = 6, 초점이 (0, ±8)이라 c = 8이고, c² = a² + b² 이에요. 꼭짓점은 (0, ±b)이고, 실제 좌표는 x = X + 32, y = Y − 22, z = 0이에요.",
-  ans:"2b = 12 → b = 6, c = 8 → a² = 64 − 36 = 28, 쌍곡선 X²/28 − Y²/36 = −1. 북쪽 꼭짓점 (X, Y) = (0, 6) → X(32, −16, 0)",
-  after:"다음 장소: 주차장 P(32, −4, 0). 꼭짓점 X에서 북쪽으로 12칸(48 m) 가면 돼요.",
+  html:'<b>5번에서 구한 타원 트랙의 두 초점</b> <span class="c">F₁(32, −14, 0)</span>, <span class="c">F₂(32, −30, 0)</span>에서 동시에 호루라기를 분다. 두 초점까지의 거리의 차가 <b>12칸</b>으로 일정한 점들은 쌍곡선을 이룬다. 5번과 같은 XY 좌표(운동장 중심이 원점)에서 이 쌍곡선의 방정식을 <span class="c">X²/a² − Y²/b² = −1</span>이라 하자.<br>① a²의 값을 구하라.<br>② 이 쌍곡선의 두 꼭짓점 중 <b>북쪽 꼭짓점</b> X의 실제 좌표 <span class="c">(x, y, z)</span>를 구하라. (지면 위의 점)<br>③ 꼭짓점 X에서 벡터 <span class="c"><span class=vec>w</span> = (0, 3, 0)</span>의 <b>4배</b>만큼 이동한 곳이 주차장 P이다. P의 좌표를 구하라.',
+  fields:[{t:"num",k:"a",label:"① a²"},{t:"vec",k:"x",label:"② X = ("},{t:"vec",k:"p",label:"③ P = ("}],
+  check:function(v){return near(num(v.a),28,0.01)&&vec(v,"x",[32,-16,0])&&vec(v,"p",[32,-4,0]);},
+  hint:"초점이 Y축 위에 있는 쌍곡선 X²/a² − Y²/b² = −1에서 거리의 차는 2b예요. 그래서 b = 6, 초점이 (0, ±8)이라 c = 8이고, c² = a² + b² 이에요. 꼭짓점은 (0, ±b)이고, 실제 좌표는 x = X + 32, y = Y − 22, z = 0이에요. ③ 4<span class=vec>w</span> = (0, 12, 0)을 X의 좌표에 더하세요.",
+  ans:"2b = 12 → b = 6, c = 8 → a² = 64 − 36 = 28. 북쪽 꼭짓점 (X, Y) = (0, 6) → X(32, −16, 0). P = (32, −16, 0) + (0, 12, 0) = (32, −4, 0)",
+  after:"다음 장소: 주차장 P(32, −4, 0)로 가세요.",
   move:[{name:"F → X",v:"(0, 6, 0)"},{name:"X → P",v:"(0, 12, 0)"}], place:"XP"},
- {stage:4,exit:true,title:"출구: 스피커 소리의 경계",
-  html:'체육관 지붕(z = 3)의 스피커 <span class="c">K(21, −6, 3)</span> 소리는 K를 중심으로 하고 반지름이 9칸인 구 안에서만 들린다.<br>① 정문 <span class="c">G(0, 0, 0)</span>과 후문 <span class="c">H(27, 0, 0)</span>의 좌표를 각각 이 구의 방정식의 좌변에 대입한 값을 구하라.<br>② 정문과 후문 중 구 위에 있는 문을 골라라.',
-  fields:[{t:"num",k:"pg",label:"① 정문 대입값"},{t:"num",k:"ph",label:"① 후문 대입값"},{t:"sel",k:"g",label:"② 구 위의 문",opts:["선택","정문","후문"]}],
-  check:function(v){return near(num(v.pg),486,0.01)&&near(num(v.ph),81,0.01)&&v.g==="후문";},
-  hint:"(x − 21)² + (y + 6)² + (z − 3)² = 81 이에요. 정문은 (0 − 21)² + (0 + 6)² + (0 − 3)², 후문은 (27 − 21)² + (0 + 6)² + (0 − 3)²를 계산해 보세요. 좌변 값이 81과 같으면 구 위의 점이에요.",
-  ans:"구의 방정식 (x − 21)² + (y + 6)² + (z − 3)² = 81. 정문 대입값 441 + 36 + 9 = 486, 후문 대입값 36 + 36 + 9 = 81 → 후문이 구 위에 있음",
+ {stage:4,exit:true,title:"출구: 후문과 스피커 소리",
+  html:'주차장 <span class="c">P(32, −4, 0)</span>에서 보물상자가 있는 후문 <span class="c">H(27, 0, 0)</span>으로 가려고 한다.<br>① 벡터 <span class="c"><span class=vec>PH</span></span>를 성분으로 나타내라.<br>② 체육관 지붕의 스피커 <span class="c">K(21, −6, 3)</span> 소리는 K를 중심으로 하고 반지름이 9칸인 구의 내부와 구 위에서만 들린다. 정문 <span class="c">G(0, 0, 0)</span>과 후문 <span class="c">H(27, 0, 0)</span>의 좌표를 각각 이 구의 방정식의 좌변에 대입한 값을 구하고, 스피커 소리가 들리는 문을 골라라.',
+  fields:[{t:"vec",k:"ph",label:"① <span class=vec>PH</span> = ("},{t:"num",k:"kg",label:"② 정문 대입값"},{t:"num",k:"kh",label:"② 후문 대입값"},{t:"sel",k:"g",label:"② 소리가 들리는 문",opts:["선택","정문","후문"]}],
+  check:function(v){return vec(v,"ph",[-5,4,0])&&near(num(v.kg),486,0.01)&&near(num(v.kh),81,0.01)&&v.g==="후문";},
+  hint:"① <span class=vec>PH</span> = (H의 좌표) − (P의 좌표)를 성분끼리 빼요. ② 구의 방정식은 (x − 21)² + (y + 6)² + (z − 3)² = 81이에요. 정문은 (0 − 21)² + (0 + 6)² + (0 − 3)², 후문은 (27 − 21)² + (0 + 6)² + (0 − 3)²를 계산해 81과 비교해 보세요. 81보다 크면 구 밖, 81이면 구 위예요.",
+  ans:"<span class=vec>PH</span> = (27 − 32, 0 − (−4), 0 − 0) = (−5, 4, 0). 정문 대입값 441 + 36 + 9 = 486 (구 밖, 안 들림), 후문 대입값 36 + 36 + 9 = 81 (구 위) → 소리가 들리는 문은 후문",
   after:"다음 장소: 후문 H(27, 0, 0). 보물상자가 있어요! 마지막 자물쇠 숫자를 얻었어요.", digit:8, gate:{place:"후문 H(27, 0, 0)",code:"보물지도",key:"H"}, move:{name:"P → H",v:"(−5, 4, 0)"}, place:"H"},
  {stage:4,exit:true,final:true,title:"최종: 벡터의 합",
   html:'이동 기록에 모인 벡터 ①~⑥을 모두 더하라. 그리고 모은 숫자 4개로 보물상자 자물쇠 번호를 입력하라.',
   fields:[{t:"vec",k:"s",label:"합 = ("},{t:"num",k:"code",label:"자물쇠 번호"}],
   check:function(v){return vec(v,"s",[27,0,0],0.01)&&String(v.code).replace(/\D/g,"")==="8258";},
-  hint:"합은 1번 답과 비교해 보세요. 자물쇠 숫자는 얻은 순서대로예요.",
-  ans:"(27, 0, 0) = GH, 자물쇠 8258",
-  after:""}
+  hint:"x 성분끼리, y 성분끼리, z 성분끼리 더해 보세요. 자물쇠 숫자는 얻은 순서대로예요.",
+  ans:"(7, −14, 0) + (−2, −3, 2) + (27, −5, −2) + (0, 6, 0) + (0, 12, 0) + (−5, 4, 0) = (27, 0, 0) = <span class=vec>GH</span>, 자물쇠 8258",
+  after:"<b>합 (27, 0, 0)은 1번에서 구한 정문 → 후문 벡터 <span class=vec>GH</span>와 똑같아요!</b>"}
 ];
 
-var PLACES={G:[0,0],E:[7,-14],M:[5,-17],N:[5,-17],F:[32,-22],F1:[32,-14],F2:[32,-30],X:[32,-16],P:[32,-4],H:[27,0]};
+var PLACES={G:[0,0],E:[7,-14],M:[5,-17],F:[32,-22],F1:[32,-14],F2:[32,-30],X:[32,-16],P:[32,-4],H:[27,0]};
 var LS="coord-escape-v2";
 var st={solved:0,start:Date.now(),hints:0,hintSeen:{},teacher:false,showAns:false,end:null,arrived:{},skipped:{}};
 try{var saved=JSON.parse(localStorage.getItem(LS)||"null");if(saved&&typeof saved.solved==="number"){st=Object.assign(st,saved);st.teacher=false;st.showAns=false;}}catch(e){}
@@ -669,10 +658,10 @@ function arrivalCard(k){
 var TEAM_LS="coord-team";
 var team=null; try{var tv=localStorage.getItem(TEAM_LS);team=tv?Number(tv):null;}catch(e){}
 var lastSent="", sendTimer=null;
-function placeKey(){var p="G",L={5:"F",7:"P"};for(var k=0;k<st.solved;k++){if(Q[k].gate){if(st.arrived[k])p=Q[k].gate.key;}else if(L[k])p=L[k];}return p;}
+function placeKey(){var p="G",L={3:"F",5:"P"};for(var k=0;k<st.solved;k++){if(Q[k].gate){if(st.arrived[k])p=Q[k].gate.key;}else if(L[k])p=L[k];}return p;}
 function progressInfo(){
   var k=pendingGate();
-  if(st.end)return {current:10,moving:false,done:true,status:"탈출 성공!",place:"H",target:""};
+  if(st.end)return {current:Q.length,moving:false,done:true,status:"탈출 성공!",place:"H",target:""};
   if(k>=0)return {current:st.solved+1,moving:true,done:false,status:"이동 중 → "+Q[k].gate.place,place:placeKey(),target:Q[k].gate.key};
   return {current:st.solved+1,moving:false,done:false,status:(st.solved+1)+"번 풀이 중 · "+Q[st.solved].title,place:placeKey(),target:""};
 }
@@ -758,7 +747,7 @@ function drawCert(names){
   var maxW=W-360;while(g.measureText(nm).width>maxW&&parseInt(g.font.split(" ")[1])>26){g.font="700 "+(parseInt(g.font.split(" ")[1])-2)+"px "+F;}
   g.fillText(nm,W/2,510);
   g.fillStyle="#3A4A58";g.font="500 34px "+F;
-  g.fillText("위 학생들은 공간좌표, 벡터, 정사영, 이차곡선, 구의 방정식 문제 10개를 모두 해결하고",W/2,610);
+  g.fillText("위 학생들은 공간좌표, 공간벡터의 성분, 정사영, 이차곡선, 구의 방정식 문제 8개를 모두 해결하고",W/2,610);
   g.fillText("정문 O(0, 0, 0)에서 출발해 후문 H(27, 0, 0)까지 무사히 탈출하였기에 이 확인증을 드립니다.",W/2,662);
   var pen=(typeof penalty==="function")?penalty():0;
   var rows=[["탈출 날짜",dateText(st.end)],["출발 → 탈출",clockText(st.start)+" → "+clockText(st.end)],["걸린 시간",durText(st.end-st.start)],["장소 카드",pen?"건너뜀 "+pen+"회 (감점 −"+pen+")":"모두 찾음 (감점 없음)"],["최종 벡터의 합","(27, 0, 0) = GH"],["자물쇠 번호","8 – 2 – 5 – 8"]];
@@ -856,7 +845,7 @@ function render(){
   });
   if(st.end){
     var w=el("div",{class:"panel win",id:"winBox"});
-    w.innerHTML='<span class="eyebrow">ESCAPE</span><h2>탈출 성공!</h2><p>정문에서 출발해 학교를 한 바퀴 돌았지만, 이동 벡터의 합은 처음 구한 <span class="c">GH = (27, 0, 0)</span>과 같아요. 경로가 달라도 출발점과 도착점이 같으면 벡터의 합은 같습니다.</p><p>'+(penalty()?'장소 카드를 '+penalty()+'번 건너뛰어 <b>감점 −'+penalty()+'</b>이에요.':'장소 카드를 모두 찾아 <b>감점 없이</b> 탈출했어요!')+'</p>';
+    w.innerHTML='<span class="eyebrow">ESCAPE</span><h2>탈출 성공!</h2><div class="aha"><div class="eq">① + ② + ③ + ④ + ⑤ + ⑥ = (27, 0, 0)</div><div class="big">= 1번에서 구한 <span class=vec>GH</span> !</div><p>학교를 한 바퀴 돈 이동 벡터들의 합이 정문에서 후문으로 곧장 가는 벡터 <span class=vec>GH</span>와 똑같아요.<br><b>경로가 달라도 출발점과 도착점이 같으면 벡터의 합은 같습니다.</b></p></div><p>'+(penalty()?'장소 카드를 '+penalty()+'번 건너뛰어 <b>감점 −'+penalty()+'</b>이에요.':'장소 카드를 모두 찾아 <b>감점 없이</b> 탈출했어요!')+'</p>';
     w.insertAdjacentHTML("beforeend",certFormHTML());
     box.appendChild(w);
     document.getElementById("certBtn").onclick=makeCert;
@@ -900,16 +889,27 @@ function drawMap(){
     h+=g+lab;
   }
   var route=["G"];
-  Q.forEach(function(q,i){if(i<st.solved&&q.place){({E:["E"],N:["N"],F:["F"],XP:["X","P"],H:["H"]}[q.place]||[]).forEach(function(k){route.push(k);});}});
+  Q.forEach(function(q,i){if(i<st.solved&&q.place){({E:["E"],M:["M"],F:["F"],XP:["X","P"],H:["H"]}[q.place]||[]).forEach(function(k){route.push(k);});}});
   h+='<defs><marker id="vArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#C2410C"/></marker></defs>';
   for(var ri=1;ri<route.length;ri++){var pa=px(PLACES[route[ri-1]][0],PLACES[route[ri-1]][1]),pb=px(PLACES[route[ri]][0],PLACES[route[ri]][1]);
     var dx=pb[0]-pa[0],dy2=pb[1]-pa[1],L=Math.sqrt(dx*dx+dy2*dy2)||1,sh=Math.min(18,L/3);
     h+='<line x1="'+pa[0]+'" y1="'+pa[1]+'" x2="'+(pb[0]-dx/L*sh)+'" y2="'+(pb[1]-dy2/L*sh)+'" stroke="#C2410C" stroke-width="6" stroke-linecap="round" marker-end="url(#vArrow)"/>';}
-  if(st.solved>=6&&st.solved<8){var c=px(32,-22);h+='<ellipse cx="'+c[0]+'" cy="'+c[1]+'" rx="'+6*O.u+'" ry="'+10*O.u+'" fill="none" stroke="#C2410C" stroke-width="4"/>';}
-  if(st.solved>=2&&st.solved<4){var a=px(3,-19),b=px(6,-16);h+='<line x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'" stroke="#7B3FB8" stroke-width="10" stroke-linecap="round" stroke-opacity=".8"/>';}
+  if(st.end){
+    var g0=px(0,0),h0=px(27,0),gl=h0[0]-g0[0]-16;
+    h+='<defs><marker id="gArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#15803D"/></marker></defs>';
+    h+='<line class="ghdraw" x1="'+g0[0]+'" y1="'+g0[1]+'" x2="'+(h0[0]-16)+'" y2="'+h0[1]+'" stroke="#15803D" stroke-width="9" stroke-linecap="round" marker-end="url(#gArrow)" style="stroke-dasharray:'+gl+';stroke-dashoffset:'+gl+'"/>';
+    var gx=(g0[0]+h0[0])/2,gy=g0[1]+62;
+    h+='<g class="ghlabel"><text x="'+gx+'" y="'+gy+'" text-anchor="middle" font-size="40" font-weight="800" fill="#15803D" stroke="#fff" stroke-width="7" paint-order="stroke" font-family="Gothic A1,sans-serif">GH</text>';
+    h+='<line x1="'+(gx-26)+'" y1="'+(gy-38)+'" x2="'+(gx+22)+'" y2="'+(gy-38)+'" stroke="#fff" stroke-width="8"/><line x1="'+(gx-26)+'" y1="'+(gy-38)+'" x2="'+(gx+20)+'" y2="'+(gy-38)+'" stroke="#15803D" stroke-width="3.5" marker-end="url(#gArrow)"/></g>';
+    for(var ni=1;ni<route.length&&ni<=6;ni++){var a1=px(PLACES[route[ni-1]][0],PLACES[route[ni-1]][1]),b1=px(PLACES[route[ni]][0],PLACES[route[ni]][1]);
+      var mx=(a1[0]+b1[0])/2,my=(a1[1]+b1[1])/2,ddx=b1[0]-a1[0],ddy=b1[1]-a1[1],dl=Math.sqrt(ddx*ddx+ddy*ddy)||1,ox=-ddy/dl*24,oy=ddx/dl*24;
+      h+='<g class="vnum"><circle cx="'+(mx+ox)+'" cy="'+(my+oy)+'" r="21" fill="#fff" stroke="#C2410C" stroke-width="4"/><text x="'+(mx+ox)+'" y="'+(my+oy+10)+'" text-anchor="middle" font-size="28" font-weight="800" fill="#C2410C" font-family="Gothic A1,sans-serif">'+ni+'</text></g>';}
+  }
+  if(st.solved>=4&&st.solved<6){var c=px(32,-22);h+='<ellipse cx="'+c[0]+'" cy="'+c[1]+'" rx="'+6*O.u+'" ry="'+10*O.u+'" fill="none" stroke="#C2410C" stroke-width="4"/>';}
+  if(st.solved>=2&&st.solved<3){var a=px(3,-19),b=px(6,-16);h+='<line x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'" stroke="#7B3FB8" stroke-width="10" stroke-linecap="round" stroke-opacity=".8"/>';}
   var marks=[["G","정문 G","#2459C7"]];
-  var map={E:[["E","E","#7B3FB8"]],M:[["M","M (z=2)","#7B3FB8"]],N:[["N","N","#1E7A3C"]],F:[["F","F","#C2410C"]],F12:[["F1","F₁","#C2410C"],["F2","F₂","#C2410C"]],XP:[["X","X","#A61E4D"],["P","P","#A61E4D"]],H:[["H","후문 H ★","#A61E4D"]]};
-  Q.forEach(function(q,i){if(i<st.solved&&q.place&&map[q.place]){if(q.place==="M"&&st.solved>=4)return;if(q.place==="F12"&&st.solved>=8)return;marks=marks.concat(map[q.place]);}});
+  var map={E:[["E","E","#7B3FB8"]],M:[["M","M (z=2)","#1E7A3C"]],F:[["F","F","#C2410C"]],F12:[["F1","F₁","#C2410C"],["F2","F₂","#C2410C"]],XP:[["X","X","#A61E4D"],["P","P","#A61E4D"]],H:[["H","후문 H ★","#A61E4D"]]};
+  Q.forEach(function(q,i){if(i<st.solved&&q.place&&map[q.place]){if(q.place==="F12"&&st.solved>=6)return;marks=marks.concat(map[q.place]);}});
   marks.forEach(function(m){
     if(m[0]==="N"&&st.solved>=4){}
     var p=px(PLACES[m[0]][0],PLACES[m[0]][1]);
